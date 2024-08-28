@@ -1,0 +1,29 @@
+iniciar servidor: npm run dev
+
+
+Pastas principais do projeto
+└── scr/
+    ├── app/         
+    └── components/
+    └── lib/
+
+
+1. lib/
+   └── utils.ts   //A função cn simplifica a manipulação de classes CSS em projetos Tailwind, mesclando classes dinâmicas de forma eficiente.
+
+2. components/
+   └── ui/        //Dentro desta pasta temos a estilização de alguns componentes, usando a função importada cn, e a biblioteca class-variance-authority (cva).
+
+3. app/
+   └── page.tsx   //Arquivo principal. Ele será o primeiro a ser carregado ao iniciar o servidor.
+   └── home/      //Pasta referente a página home.
+   └── login/     //Pasta referente a página login.
+
+
+Para uma nova tela, basta criar uma pasta dentro do app/, assim como a home/ ou login/, e dentro dela colocar um arquivo chamado "page.tsx" 
+e iniciar a programação. Mesmo o arquivo de dentro da pasta tendo o mesmo nome do arquivo principal, como ele está em uma pasta, não terá interferência.
+
+
+
+
+     
