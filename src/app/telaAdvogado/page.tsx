@@ -6,13 +6,16 @@ import { collection, query, where, getDocs, getFirestore } from "firebase/firest
 import { app } from '../firebase/firebase'; 
 import Link from 'next/link';
 
+
 const db = getFirestore(app);
+
 
 const TelaAdvogado = () => {
     const searchParams = useSearchParams();
     const email = searchParams.get('email');
     const [nome, setNome] = useState('');
-    const [loading, setLoading] = useState(true); // Estado para controlar o carregamento
+    const [cpf, setCpf] = useState('')
+    const [loading, setLoading] = useState(true); 
 
     useEffect(() => {
         const fetchNome = async () => {
@@ -26,6 +29,7 @@ const TelaAdvogado = () => {
                     console.log("Documento encontrado:", querySnapshot.docs[0].data());
                     const advogadoData = querySnapshot.docs[0].data();
                     setNome(advogadoData.nome);
+                    setCpf(advogadoData.cpf);
                 } else {
                     console.error("Advogado não encontrado!");
                     setNome('Advogado não encontrado'); // Mensagem se não encontrado
@@ -51,7 +55,7 @@ const TelaAdvogado = () => {
                 <h1>Bem-vindo, {nome}</h1> // Nome do advogado
             )}
             <br />
-            <Link href="/envioArquivo">
+            <Link href={`/envioArquivo?cpf=${encodeURIComponent(cpf)}`}>
                 <button>Anexar arquivos</button>
             </Link>
         </>

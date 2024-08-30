@@ -22,17 +22,18 @@ const loginComEmailESenha = async (email, senha) => {
 //------------------------------------------------------------------------------------------------------------------------------------
 const registrarComEmailESenha = async (cpf, nome, email, senha, telefone) => {
     try {   
-        console.log(nome, email, senha)
+        console.log(nome, email, senha, telefone, cpf)
         const res = await createUserWithEmailAndPassword(auth, email, senha);
         const user = res.user;
         
         // Lança os dados para o banco na tabela "Advogado"
         await addDoc(collection(db, "Advogado"), {
             uid: user.uid,
-            cpf,
-            nome,
             authProvider: 'local',
+            cpf,
             email,
+            nome,
+            senha,
             telefone
         });
    
