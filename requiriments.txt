@@ -22,6 +22,7 @@ Pastas principais do projeto
 
 Para uma nova tela, basta criar uma pasta dentro do app/, assim como a home/ ou login/, e dentro dela colocar um arquivo chamado "page.tsx" 
 e iniciar a programação. Mesmo o arquivo de dentro da pasta tendo o mesmo nome do arquivo principal, como ele está em uma pasta, não terá interferência.
+O nome do caminho que deve ser colocado na app/page.tsx é o nome da pasta criada.
 
 
 

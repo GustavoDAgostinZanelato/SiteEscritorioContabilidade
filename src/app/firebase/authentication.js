@@ -6,7 +6,7 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
 
-// Função do LOGIN - 
+// Função do LOGIN - confirir dados
 //------------------------------------------------------------------------------------------------------------------------------------
 const loginComEmailESenha = async (email, senha) => {
     try {
@@ -43,4 +43,4 @@ const registrarComEmailESenha = async (cpf, nome, email, senha, telefone) => {
 
 
 //Export de funções
-export { auth, registrarComEmailESenha, loginComEmailESenha };
+export { auth, registrarComEmailESenha, loginComEmailESenha, db};

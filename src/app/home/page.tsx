@@ -4,10 +4,10 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 
-
+// min-h-[100dvh]
 export default function Component() {
   return (
-    <div className="flex flex-col min-h-[100dvh]">
+    <div className="flex flex-col ">
       <header className="bg-primary text-primary-foreground px-4 lg:px-20 h-[50%]  flex items-center">
       <Link href="#" className="flex items-center justify-center" prefetch={false}>
         <h1>aaa</h1>

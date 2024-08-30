@@ -1,6 +1,7 @@
 "use client"; // Indica que o código será executado no lado do cliente (navegador) em um ambiente React
 
 import { useState } from "react";
+import { useRouter } from 'next/navigation';
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -8,33 +9,42 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { registrarComEmailESenha, loginComEmailESenha } from "../firebase/authentication";
 
+
+//Aba de Login
 export default function Login() { 
-  const [email, setEmail] = useState("");
-  const [senha, setSenha] = useState("");
 
-  // Função handleLogin para login
-  const handleLogin = async () => {
-    try {
-      await loginComEmailESenha(email, senha);
-      alert("Login realizado com sucesso!");
+    //Lógica para o Login do usuário
+    const [email, setEmail] = useState("");
+    const [senha, setSenha] = useState("");
+    const router = useRouter(); 
 
-    } catch (error) {
-      const firebaseError = error as { code: string; message: string };
+    const handleLogin = async () => {
+      try 
+      {
+        await loginComEmailESenha(email, senha);
+        // alert("Login realizado com sucesso!");
+        console.log(email)
+        router.push(`/telaAdvogado?email=${email}`);
+      } 
+      
+      catch (error) 
+      {
+        const firebaseError = error as { code: string; message: string };
 
-      // Alert caso alguma credencial esteja errada
-      if (
-        firebaseError.code === 'auth/user-not-found' ||
-        firebaseError.code === 'auth/wrong-password' ||
-        firebaseError.code === 'auth/invalid-credential'
-      ) {
-        alert("Email ou senha incorretos. Verifique suas credenciais e tente novamente.");
-      } else {
-        alert("Preencha todos os campos para prosseguir");
+        if (firebaseError.code === 'auth/user-not-found' ||
+          firebaseError.code === 'auth/wrong-password' ||
+          firebaseError.code === 'auth/invalid-credential') 
+        {
+          alert("Email ou senha incorretos. Verifique suas credenciais e tente novamente.");
+        } 
+        else 
+        {
+          alert("Preencha todos os campos para prosseguir");
+        }
+        console.error("Erro ao fazer login:", firebaseError);
       }
+    };
 
-      console.error("Erro ao fazer login:", firebaseError);
-    }
-  };
 
   // Barra de Navegação entre "Entrar" e "Criar conta"
   return (
@@ -44,8 +54,7 @@ export default function Login() {
           <TabsTrigger value="login">Entrar</TabsTrigger> 
           <TabsTrigger value="register">Criar conta</TabsTrigger>
         </TabsList>
-
-        {/* Aba ENTRAR */}
+  
         <TabsContent value="login">
           <Card>
             <CardHeader>
@@ -81,8 +90,7 @@ export default function Login() {
             </CardFooter>
           </Card>
         </TabsContent>
-
-        {/* Aba CRIAR CONTA */}
+  
         <TabsContent value="register"> 
           <SignUp /> 
         </TabsContent>
@@ -90,8 +98,12 @@ export default function Login() {
     </div>
   );
 }
+  
 
+// Aba CRIAR CONTA
 function SignUp() {
+
+  //Lógica para o Registro do usuário
   const [cpf, setCpf] = useState("");
   const [email, setEmail] = useState("");
   const [nome, setNome] = useState("");
