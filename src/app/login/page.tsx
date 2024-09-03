@@ -49,7 +49,7 @@ export default function Login() {
 
   // Barra de Navegação entre "Entrar" e "Criar conta"
   return (
-    <div className="flex flex-col items-center justify-center h-screen">
+    <div className="flex flex-col items-center mt-[7%]" style={{ minHeight: '800px' }}>
       <Tabs defaultValue="login" className="w-full max-w-md">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="login">Entrar</TabsTrigger> 
@@ -108,6 +108,7 @@ function SignUp() {
   const [cpf, setCpf] = useState("");
   const [email, setEmail] = useState("");
   const [nome, setNome] = useState("");
+  const [sobrenome, setSobrenome] = useState("");
   const [senha, setSenha] = useState("");
   const [telefone, setTelefone] = useState("");
   const router = useRouter(); 
@@ -116,7 +117,7 @@ function SignUp() {
   const handleSignUp = async () => {
     try {
       // Verifica se todos os campos foram preenchidos
-      if (cpf.length === 0 || email.length === 0 || nome.length === 0 || senha.length === 0 || telefone.length === 0) {
+      if (cpf.length === 0 || email.length === 0 || nome.length === 0 || sobrenome.length === 0 || senha.length === 0 || telefone.length === 0) {
         alert("Preencha todos os campos para prosseguir.");
         return;
       }
@@ -152,7 +153,7 @@ function SignUp() {
       }
       
       // Caso o registro seja um sucesso
-      await registrarComEmailESenha(cpf, nome, email, senha, telefone);
+      await registrarComEmailESenha(cpf, nome, sobrenome, email, senha, telefone);
       console.log("Usuário registrado com sucesso!")
       router.push(`/telaAdvogado?email=${email}`);
   
@@ -206,6 +207,7 @@ function SignUp() {
         <CardDescription>Crie uma nova conta seguindo os campos abaixo</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+
         <div className="space-y-2">
           <Label htmlFor="register-cpf">CPF</Label>
           <Input
@@ -217,17 +219,31 @@ function SignUp() {
             required
           />
         </div>
+
         <div className="space-y-2">
           <Label htmlFor="register-name">Nome</Label>
           <Input
             id="register-name"
             type="text"
-            placeholder="Informe seu nome completo"
+            placeholder="Informe seu nome"
             value={nome}
             onChange={(e) => setNome(e.target.value)} 
             required
           />
         </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="register-sobrenome">Sobrenome</Label>
+          <Input
+            id="register-sobrenome"
+            type="text"
+            placeholder="Informe seu sobrenome"
+            value={sobrenome}
+            onChange={(e) => setSobrenome(e.target.value)} 
+            required
+          />
+        </div>
+
         <div className="space-y-2">
           <Label htmlFor="register-email">Email</Label>
           <Input
@@ -239,6 +255,7 @@ function SignUp() {
             required
           />
         </div>
+
         <div className="space-y-2">
           <Label htmlFor="register-password">Senha</Label>
           <Input
@@ -250,6 +267,7 @@ function SignUp() {
             required
           />
         </div>
+
         <div className="space-y-2">
           <Label htmlFor="register-phonenumber">Telefone</Label>
           <Input
@@ -261,6 +279,7 @@ function SignUp() {
             required
           />
         </div>
+
       </CardContent>
       <CardFooter>
         <Button onClick={handleSignUp}>Criar conta</Button>

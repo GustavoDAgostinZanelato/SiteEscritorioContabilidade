@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from 'next/navigation';
 import { useSearchParams } from "next/navigation";
 import { Tabs } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
@@ -8,19 +9,44 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { addDoc, collection } from "firebase/firestore"; 
+import { addDoc, collection, query, where, getDocs } from "firebase/firestore"; 
 import { storage } from "../firebase/firebase";
 import { db } from "../firebase/firebase";
 
 
 export default function EnvioArquivo() {
-    const searchParams = useSearchParams(); // Captura os parâmetros da URL
-    const cpf = searchParams.get("cpf");    // Obtém o CPF da URL
-    const [titulo, setTitulo] = useState("");
-    const [descricao, setDescricao] = useState("");
-    const [data, setData] = useState("");
-    const [dataAtual, setDataAtual] = useState(""); 
+    const router = useRouter(); 
+    const searchParams = useSearchParams();  // Captura os parâmetros da URL
+    const email = searchParams.get("email"); // Obtém o Email da URL
+    const [cpf, setCpf] = useState('');
+    const [titulo, setTitulo] = useState('');
+    const [descricao, setDescricao] = useState('');
+    const [data, setData] = useState('');
+    const [dataAtual, setDataAtual] = useState(''); 
     const [arquivo, setArquivo] = useState<File | null>(null);
+
+
+    //Pega o cpf do banco a partir do email de url
+    useEffect(() => {
+        async function fetchCpf() {
+            if (email) {  // Verifica se o email foi obtido da URL
+                const q = query(collection(db, "Advogado"), where("email", "==", email));
+                const querySnapshot = await getDocs(q);
+
+                if (!querySnapshot.empty) {
+                    // Assumindo que o email é único, pegamos o primeiro documento encontrado
+                    const advogadoDoc = querySnapshot.docs[0];
+                    const advogadoData = advogadoDoc.data();
+                    setCpf(advogadoData.cpf);  // Define o CPF no estado
+                } else {
+                    console.log("Nenhum advogado encontrado com o email fornecido.");
+                }
+            }
+        }
+
+        fetchCpf();  // Chama a função para buscar o CPF
+    }, [email]);  // O useEffect será disparado quando o email mudar
+   
 
 
     // Função para obter a data atual
@@ -74,9 +100,11 @@ export default function EnvioArquivo() {
                 DataEnvio: dataAtual,
                 CaminhoArquivo: downloadURL,
                 cpfAdvogado: cpf,
+                Status: "Em análise",
             });
-    
+            
             alert("Orçamento solicitado com sucesso!");
+            router.push(`/telaAdvogado?email=${email}`);
         } catch (error) {
             alert("Erro ao enviar arquivo: " + error);
         }

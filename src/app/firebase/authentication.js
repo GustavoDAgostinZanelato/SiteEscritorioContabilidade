@@ -20,9 +20,9 @@ const loginComEmailESenha = async (email, senha) => {
 
 // Função do REGISTRO - enviar os dados
 //------------------------------------------------------------------------------------------------------------------------------------
-const registrarComEmailESenha = async (cpf, nome, email, senha, telefone) => {
+const registrarComEmailESenha = async (cpf, nome, sobrenome, email, senha, telefone) => {
     try {   
-        console.log(nome, email, senha, telefone, cpf)
+        console.log(cpf, nome, sobrenome, email, senha, telefone)
         const res = await createUserWithEmailAndPassword(auth, email, senha);
         const user = res.user;
         
@@ -34,7 +34,8 @@ const registrarComEmailESenha = async (cpf, nome, email, senha, telefone) => {
             email,
             nome,
             senha,
-            telefone
+            telefone,
+            sobrenome,
         });
    
     } catch (error) {
