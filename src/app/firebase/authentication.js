@@ -9,12 +9,12 @@ const db = getFirestore(app);
 // Função do LOGIN - confirir dados
 //------------------------------------------------------------------------------------------------------------------------------------
 const loginComEmailESenha = async (email, senha) => {
-    try {
-        const userCredential = await signInWithEmailAndPassword(auth, email, senha);
-        return userCredential;  // Retorna o objeto de credenciais do usuário em caso de sucesso
-    } catch (error) {
-        throw error;  // Lança o erro para ser capturado na função que chamou essa
-    }
+  try {
+      const userCredential =  await signInWithEmailAndPassword(auth, email, senha);
+      return userCredential;  // Retorna o objeto de credenciais do usuário em caso de sucesso
+  } catch (error) {
+      throw error;  // Lança o erro para ser capturado na função que chamou essa
+  }
 };
 
 
@@ -39,6 +39,7 @@ const registrarComEmailESenha = async (cpf, nome, sobrenome, email, senha, telef
         });
    
     } catch (error) {
+        console.error("Erro ao registrar usuário:", error.message);
         throw error; //Faz com que o erro do email ja cadastrado seja lançado e capturado na função handleSignUp no page.tsx.
     }
 }

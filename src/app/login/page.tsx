@@ -12,40 +12,72 @@ import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "../firebase/firebase"; 
 
 
-//Aba de Login
+// Aba LOGIN
 export default function Login() { 
 
-    //Lógica para o Login do usuário
-    const [email, setEmail] = useState("");
-    const [senha, setSenha] = useState("");
-    const router = useRouter(); 
+  // Lógica para o Login do usuário
+  const [email, setEmail] = useState('');
+  const [senha, setSenha] = useState('');
+  const [uid, setUid] = useState('');
+  const router = useRouter(); 
 
-    const handleLogin = async () => {
-      try 
-      {
-        await loginComEmailESenha(email, senha);
-        console.log("Login realizado com sucesso!");
-        router.push(`/telaAdvogado?email=${email}`);
-      } 
-      
-      catch (error) 
-      {
-        const firebaseError = error as { code: string; message: string };
 
-        if (firebaseError.code === 'auth/user-not-found' ||
-          firebaseError.code === 'auth/wrong-password' ||
-          firebaseError.code === 'auth/invalid-credential') 
-        {
-          alert("Email ou senha incorretos. Verifique suas credenciais e tente novamente.");
-        } 
-        else 
-        {
-          alert("Preencha todos os campos para prosseguir");
-        }
-        console.error("Erro ao fazer login:", firebaseError);
+  //Pega o ID do advogado do BD
+  async function fetchId() {
+    if (email) {
+      const q = query(collection(db, "Advogado"), where("email", "==", email));
+      const querySnapshot = await getDocs(q);
+      if (!querySnapshot.empty) {
+          const advogadoDoc = querySnapshot.docs[0];
+          const advogadoData = advogadoDoc.data();
+          setUid(advogadoData.uid); 
+          console.log(uid)
       }
-    };
+    }
+  }
+  fetchId();
 
+
+  // Função para verificar usuário na coleção
+  const verificarUsuario = async (email: string, colecao: string) => {
+    const q = query(collection(db, colecao), where("email", "==", email));
+    const querySnapshot = await getDocs(q);
+    if (!querySnapshot.empty) {
+      return querySnapshot.docs[0].data(); // Retorna os dados do usuário encontrado
+    }
+    return null; // Retorna null se o email não for encontrado
+  };
+
+
+  const handleLogin = async () => {
+    try {
+
+      // Verifica se os campos estão preenchidos
+      if (email.length === 0 || senha.length === 0) {
+        alert("Preencha todos os campos para prosseguir.");
+        return;
+      }
+
+      // Verifica se o email está na coleção Advogado
+      const usuarioAdvogado = await verificarUsuario(email, "Advogado");
+      if (usuarioAdvogado && usuarioAdvogado.senha === senha) {
+        router.push(`/telaAdvogado?email=${email}`);
+        return;
+      }
+
+      // Verifica se o email está na coleção Empresa
+      const usuarioEmpresa = await verificarUsuario(email, "Empresa");
+      if (usuarioEmpresa && usuarioEmpresa.senha === senha) {
+        router.push(`/telaEmpresa?email=${email}`);
+        return;
+      }
+      
+      await loginComEmailESenha(email, senha); // Verifica credenciais no sistema de autenticação Firebase
+
+    } catch (error) {
+        alert("Email ou senha incorretos. Verifique suas credenciais e tente novamente.");
+    }
+  };
 
   // Barra de Navegação entre "Entrar" e "Criar conta"
   return (
@@ -95,11 +127,12 @@ export default function Login() {
         <TabsContent value="register"> 
           <SignUp /> 
         </TabsContent>
+
       </Tabs>
     </div>
   );
 }
-  
+
 
 // Aba CRIAR CONTA
 function SignUp() {
@@ -128,10 +161,16 @@ function SignUp() {
         return;
       }
 
-      // Verifica o tamanho da senha
-      if (cpf.length < 11) {
+      // Verifica o tamanho do cpf
+      if (cpf.length < 14) {
         alert("CPF inválido.");
         return;
+      }
+
+      //Verifica o tamanho do telefone
+      if (telefone.length < 14) {
+        alert("Número de telefone inválido.");
+        return
       }
   
       // Verifica se o CPF já está em uso
@@ -195,9 +234,6 @@ function SignUp() {
       return `${apenasNumeros.slice(0, 3)}.${apenasNumeros.slice(3, 6)}.${apenasNumeros.slice(6, 9)}-${apenasNumeros.slice(9, 11)}`; // Formato XXX.XXX.XXX-XX
     }
   };
-
-
-  //Talvez no futuro colocar alguma verificação de email em caso de dumby user
 
 
   return (

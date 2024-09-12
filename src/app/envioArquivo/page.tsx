@@ -2,69 +2,85 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from 'next/navigation';
-import { useSearchParams } from "next/navigation";
 import { Tabs } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { useSearchParams } from "next/navigation";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { addDoc, collection, query, where, getDocs } from "firebase/firestore"; 
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { storage } from "../firebase/firebase";
 import { db } from "../firebase/firebase";
 
 
 export default function EnvioArquivo() {
     const router = useRouter(); 
-    const searchParams = useSearchParams();  // Captura os parâmetros da URL
-    const email = searchParams.get("email"); // Obtém o Email da URL
+    //Informações do Advogado
+    const searchParams = useSearchParams();
+    const email = searchParams.get("email");
+    const [nome, setNome] = useState('');
+    const [sobrenome, setSobrenome] = useState('');
+    const [telefone, setTelefone] = useState('');
+    //Informações do Documento
     const [cpf, setCpf] = useState('');
     const [titulo, setTitulo] = useState('');
     const [descricao, setDescricao] = useState('');
     const [data, setData] = useState('');
     const [dataAtual, setDataAtual] = useState(''); 
+    const [dataComparacao, setDataComparacao] = useState('');
+    const [dataEscolhidaBr, setDataEscolhidaBr] = useState('');
     const [arquivo, setArquivo] = useState<File | null>(null);
 
 
-    //Pega o cpf do banco a partir do email de url
+    // Pega os dados do Advogado a partir do email da URL
     useEffect(() => {
         async function fetchCpf() {
-            if (email) {  // Verifica se o email foi obtido da URL
+            if (email) {
                 const q = query(collection(db, "Advogado"), where("email", "==", email));
                 const querySnapshot = await getDocs(q);
-
                 if (!querySnapshot.empty) {
-                    // Assumindo que o email é único, pegamos o primeiro documento encontrado
                     const advogadoDoc = querySnapshot.docs[0];
                     const advogadoData = advogadoDoc.data();
-                    setCpf(advogadoData.cpf);  // Define o CPF no estado
-                } else {
-                    console.log("Nenhum advogado encontrado com o email fornecido.");
+                    setCpf(advogadoData.cpf);
+                    setNome(advogadoData.nome);
+                    setSobrenome(advogadoData.sobrenome);
+                    setTelefone(advogadoData.telefone);
                 }
             }
         }
-
         fetchCpf();  // Chama a função para buscar o CPF
-    }, [email]);  // O useEffect será disparado quando o email mudar
+    }, [email]);  // Como o useEffect recebe o email como parâmetro, o hook será disparado quando o email mudar 
    
-
 
     // Função para obter a data atual
     useEffect(() => {
-        const dataAtualISO = new Date().toISOString().split("T")[0]; // Formato YYYY-MM-DD
-        setDataAtual(dataAtualISO);
-        console.log(dataAtualISO);
+        const dataAtual = new Date();
+        const dia = String(dataAtual.getDate()).padStart(2, '0');      // Garantir dois dígitos
+        const mes = String(dataAtual.getMonth() + 1).padStart(2, '0'); // Janeiro é identificado com mês 0, então soma 1 a lista
+        const ano = dataAtual.getFullYear();
+    
+        const dataComparacao = `${ano}-${mes}-${dia}`; // Formato DD/MM/YYYY
+        const dataBr = `${dia}/${mes}/${ano}`;         // Formato DD/MM/YYYY
+        setDataAtual(dataBr);             //Data no padrão BR que será enviada pro BD
+        setDataComparacao(dataComparacao) //Data no padrao US que será comparada com a data de entrega escolhida pelo usuário
+        console.log(dataBr);
     }, []);
 
-    // Função para lidar com a seleção da data
-    const handleDataChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const dataEscolhida = e.target.value;
 
-        if (dataEscolhida <= dataAtual) {
+    // Função para o usuário selecionar a data de entrega do orçamento
+    const handleDataChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const dataEscolhida = e.target.value; // Formato YYYY-MM-DD
+        if (dataEscolhida <= dataComparacao) {
             alert("Por favor, escolha uma data que seja posterior à data atual.");
-            setData(""); 
+            setData(""); // Limpa o estado se a data não for válida
         } else {
-            setData(dataEscolhida);
+            const [ano, mes, dia] = dataEscolhida.split("-"); // Separa a string de data
+            const dataEscolhidaBr = `${dia}/${mes}/${ano}`;   // Junta no formato brasileiro DD/MM/YYYY
+            setData(dataEscolhida) // Precisa estar no padrão US para mostrar no campo de seleção de datas
+            setDataEscolhidaBr(dataEscolhidaBr); //O que é enviado pro BD
+            console.log("dataEscolhidaBr:", dataEscolhidaBr);
+            console.log("dataEscolhida:", dataEscolhida);
         }
     };
 
@@ -79,41 +95,55 @@ export default function EnvioArquivo() {
         }
     };
 
+
+    //Enviando para o Banco de Dados
     const handleUpload = async () => {
         if (!arquivo) {
             alert("Por favor, selecione um arquivo.");
             return;
         }
-    
         const storageRef = ref(storage, `Documentos/${arquivo.name}`);
     
         try {
             await uploadBytes(storageRef, arquivo);
             const downloadURL = await getDownloadURL(storageRef);
-    
-            // Salva os dados do orçamento no Firestore com um ID automático
-            const orcamentoCollectionRef = collection(db, "Orcamento"); // Referência à coleção "Orcamento"
+            
+            //Envia os dados para a coleção 'Orcamento'
+            const orcamentoCollectionRef = collection(db, "Orcamento");
             await addDoc(orcamentoCollectionRef, {
                 Titulo: titulo,
                 Descricao: descricao,
-                DataEntrega: data,
+                DataEntrega: dataEscolhidaBr,
                 DataEnvio: dataAtual,
                 CaminhoArquivo: downloadURL,
                 cpfAdvogado: cpf,
                 Status: "Em análise",
             });
-            
+
+            //Envia os dados para a coleção 'OrcamentosEnviados'
+            const orcamentosEnviadosCollectionRef = collection(db, "OrcamentosEnviados");
+            await addDoc(orcamentosEnviadosCollectionRef, {
+                cpf: cpf,
+                Nome: nome,
+                Sobrenome: sobrenome,
+                Email: email,
+                Telefone: telefone,
+                Titulo: titulo,
+                Descricao: descricao,
+                DataEntrega: dataEscolhidaBr,
+                DataEnvio: dataAtual,
+                CaminhoArquivo: downloadURL,
+                Status: "Em análise",
+            });
+
             alert("Orçamento solicitado com sucesso!");
             router.push(`/telaAdvogado?email=${email}`);
         } catch (error) {
-            alert("Erro ao enviar arquivo: " + error);
+            alert("Erro ao solicitar o orçamento: " + error);
         }
     };
 
 
-
-    // HTML da página
-    //--------------------------------------------------------------------------------------------------------------------------------
     return (
         <div className="flex flex-col items-center justify-center h-screen">
             <Tabs className="w-full max-w-md">

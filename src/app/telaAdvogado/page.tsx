@@ -1,7 +1,7 @@
 "use client";
 
-import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useSearchParams } from 'next/navigation';
@@ -14,17 +14,22 @@ const db = getFirestore(app);
 
 
 export default function TelaAdvogado() {
+    //Puxando o email do Advogado da URL
     const searchParams = useSearchParams();
     const email = searchParams.get('email');
+    //Informações do Advogado
     const [nome, setNome] = useState('');
     const [cpf, setCpf] = useState('');
     const [sobrenome, setSobrenome] = useState('');
-    const [loading, setLoading] = useState(true); 
-    const [orcamentos, setOrcamentos] = useState<any[]>([]);
     const primeiraLetra = nome.slice(0, 2);
+    //Pegando os orçamentos no BD
+    const [orcamentos, setOrcamentos] = useState<any[]>([]);
     const [documentData, setDocumentData] = useState<DocumentData | null>(null);
+    //Extras
+    const router = useRouter(); 
+    const [loading, setLoading] = useState(true); 
 
-    //Definição das variáveis que armaazenam as informações no BD
+
     interface DocumentData {
       DataEnvio: string;
       DataEntrega: string;
@@ -38,16 +43,11 @@ export default function TelaAdvogado() {
     const handleRefresh = () => {
         window.location.reload();
     };
-    // // Formata as datas para o padrão BR
-    // const formatDateToBR = (date: string) => {
-    //     const localDate = new Date(date);
-    //     // Ajusta a data para o fuso horário local
-    //     const options = { day: '2-digit', month: '2-digit', year: 'numeric' };
-        
-    //     // Retorna a data formatada no padrão BR
-    //     return new Intl.DateTimeFormat('pt-BR', options).format(localDate);
-    // };
 
+    //Redireciona para a tela 
+    const handleClick = () => {
+      router.push(`/envioArquivo?email=${email}`);
+    }
 
     // Função para buscar os dados do documento no Firestore
     const fetchDocumentData = async (docId: string) => {
@@ -55,8 +55,8 @@ export default function TelaAdvogado() {
         const docRef = doc(db, 'Orcamento', docId);
         const docSnapshot = await getDoc(docRef);
         if (docSnapshot.exists()) {
-          const data = docSnapshot.data() as DocumentData; // Afirmação de tipo
-          setDocumentData(data); // Agora o TypeScript não dará erro aqui
+          const data = docSnapshot.data() as DocumentData;
+          setDocumentData(data);
         } else {
           console.log('Documento não encontrado');
         }
@@ -68,115 +68,118 @@ export default function TelaAdvogado() {
 
     useEffect(() => {
         const fetchNome = async () => {
-            setLoading(true); // Inicia o carregamento
+            setLoading(true); //Inicia o carregamento
             try {
-                console.log("Buscando o nome do advogado para o email:", email);
-                const q = query(collection(db, "Advogado"), where("email", "==", email));
-                const querySnapshot = await getDocs(q);
-                
-                //Pega algumas informações do BD
+                //Pega as informações do Advogado com base no email da URL
+                const q = query(collection(db, "Advogado"), where("email", "==", email)); //Pega os dados da coleção "Empresa" com base no email
+                const querySnapshot = await getDocs(q); //Executa a consulta e retorna um snapshot contendo os documentos que correspondem à condição
+
+                //Pega os arquivos no Banco de Dados caso querySnapshot não esteja vazio
                 if (!querySnapshot.empty) {
                     console.log("Documento encontrado:", querySnapshot.docs[0].data());
                     const advogadoData = querySnapshot.docs[0].data();
-                    setNome(advogadoData.nome);
-                    setCpf(advogadoData.cpf);
-                    setSobrenome(advogadoData.sobrenome);
+                    setNome(advogadoData.nome);           //Nome do Advogado
+                    setCpf(advogadoData.cpf);             //CPF do Advogado
+                    setSobrenome(advogadoData.sobrenome); //Sobrenome do Advogado
                     
                     // Após buscar o CPF, busca os orçamentos do advogado
                     const orcamentoQuery = query(collection(db, 'Orcamento'), where('cpfAdvogado', '==', advogadoData.cpf));
-                    const orcamentoSnapshot = await getDocs(orcamentoQuery);
-                    const orcamentoList = orcamentoSnapshot.docs.map(doc => ({
+                    const orcamentoSnapshot = await getDocs(orcamentoQuery); //orcamentoSnapshot espera até todos os documentos serem buscados
+
+                    const orcamentoList = orcamentoSnapshot.docs.map(doc => {
+                      const data = doc.data() as DocumentData; //Realizando a tipagem de orcamentoList com DocumentData
+                      return {
+                        ...data,
                         id: doc.id,
-                        ...doc.data(),
-                        Status: doc.data().Status
-                    }));
+                      };
+                    });
+
                     setOrcamentos(orcamentoList);
 
                 } else {
-                    console.error("Advogado não encontrado!");
-                    setNome('Advogado não encontrado'); 
+                  console.error("Advogado não encontrado!");
                 }
             } catch (error) {
                 console.error("Erro ao buscar o nome do advogado:", error);
-                setNome('Erro ao carregar nome');
+                setNome('Erro ao carregar nome'); //Caso o nome do advogado não seja obtido, a mensagem é exibida no lugar da variável 'nome'
             } finally {
-                setLoading(false); 
+                setLoading(false); //Finaliza o estado de carregamento, independentemente da consulta ser um sucesso ou falhar
             }
         };
 
         if (email) {
-            fetchNome();
+            fetchNome(); //Chama a função fetchNome(), que está dentro do hook. Ela pega informações do Firebase
         }
-    }, [email]);
+    }, [email]); //Sempre que a variável 'email' mudar, o useEffect será executado, pois ela está listada nas dependências do hook
 
-
+    
     return (
+      <>
         <div className="grid md:grid-cols-[260px_1fr] min-h-screen w-full">
             <div className="flex flex-col bg-background text-foreground border-r">
                 <header className="flex items-center p-6 border-b">
                     <>
-                    {loading ? ( // Verifica se está carregando
-                        <h1>Carregando...</h1>
+                    {loading ? (
+                        <br></br> // Para deixar em branco enquanto carrega o nome do user
                     ) : (
                         <h1>Bem-vindo, {nome} </h1> 
                     )}
                     </>
                 </header>
                 <nav className="flex flex-col gap-1 p-2">
-
-                    <Button variant="ghost" className="justify-start gap-2 px-3 py-2 rounded-md hover:bg-muted">
+                    <Button variant="ghost" className="justify-start gap-2 px-3 py-2 rounded-md hover:bg-muted" onClick={handleClick}>
                         <SendIcon className="w-5 h-5" />
-                        <Link href={`/envioArquivo?email=${email}`}>
-                        Faça um orçamento
-                        </Link>
+                        Solicitar um Orçamento
                     </Button>
-                    
-                    <Button variant="ghost" className="justify-start gap-2 px-3 py-2 rounded-md hover:bg-muted">
+                    {/* <Button variant="ghost" className="justify-start gap-2 px-3 py-2 rounded-md hover:bg-muted">
                         <UsersIcon className="w-5 h-5" />
                         Entre em contato
+                    </Button> */}
+                    <Button variant="ghost" className="justify-start gap-2 px-3 py-2 rounded-md hover:bg-muted">
+                        <ArchiveIcon className="w-5 h-5" />
+                        Orçamentos Aprovados 
                     </Button>
-                    
                     <Button variant="ghost" className="justify-start gap-2 px-3 py-2 rounded-md hover:bg-muted">
                         <ArchiveIcon className="w-5 h-5" />
                         Trabalhos Concluídos
                     </Button>
-
+                    <Button variant="ghost" className="justify-start gap-2 px-3 py-2 rounded-md hover:bg-muted">
+                        <ArchiveIcon className="w-5 h-5" />
+                        Lixeira 
+                    </Button>
                 </nav>
             </div>
+
             <div className="flex flex-col">
                 <header className="flex items-center gap-2 p-4 border-b">
-
                     <div className="flex-1">
                         <Input type="search" placeholder="Pesquisar trabalhos" className="rounded-50  " />
                     </div>
-
+                    <h1>Filtros(data de envio)</h1>
                     <Button variant="ghost" size="icon" onClick={handleRefresh}>
                         <RefreshCcwIcon className="w-5 h-5" />
                     </Button>
-
                     <Avatar className="h-9 w-9">
                         <AvatarFallback> {primeiraLetra} </AvatarFallback>
                     </Avatar>
-
                 </header>
 
+
+                {/* Aba Seus Envios */}
                 <div className="grid md:grid-cols-[1fr_400px] gap-4 p-4 flex-1">
-                    <div className="bg-muted rounded-md overflow-hidden flex-1">
+                    <div className=" rounded-md overflow-hidden flex-1">
                         <div className="border-b p-3 bg-background">
                             <div className="font-medium">Seus envios</div>
                             <div className="text-muted-foreground text-sm"> Trabalhos enviados: {orcamentos.length} </div>
                         </div>
 
-                        {/* Aba Seus Envios */}
                         <div className="divide-y">
                             {orcamentos.map((orcamento, index) => (
-                                <div className="flex items-center gap-3 p-3 hover:bg-muted/50 cursor-pointer" key={index}>
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" className="size-4">
-                                      <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
-                                    </svg>
+                                <div className="flex items-center gap-3 p-3 hover:bg-[#efefef]" key={index} onClick={() => fetchDocumentData(orcamento.id)}>
 
-                                    <div className="flex items-center justify-between w-full p-3">
-                                        <h1 className="cursor-pointer text-blue-500" onClick={() => fetchDocumentData(orcamento.id)}>
+                                    <div className='h-3 w-3 rounded-full bg-[#e6df30]'/>
+                                    <div className="flex items-center justify-between w-full p-3 hover:cursor-pointer ">
+                                        <h1 className="cursor-pointer text-blue-500" >
                                             {orcamento.Titulo}
                                         </h1>
                                         <h1 className="text-muted-foreground text-sm">Status: {orcamento.Status}</h1>
@@ -186,53 +189,55 @@ export default function TelaAdvogado() {
                         </div>
                     </div>
 
+
+                    {/* Aba Datalhes do Envio */}
                     <div className="bg-muted rounded-md overflow-hidden flex-1">
                         <div className="border-b p-3 bg-background">
                             <div className="font-medium pb-5">Detalhes do envio</div>
                         </div>
+                          <>
+                              {loading ? (
+                                <br></br>
+                              ) : (
+                                <div className="p-4 flex flex-col gap-4">
+                                    <div className="flex items-center gap-3">
+                                        <Avatar className="h-9 w-9">
+                                            <AvatarFallback>{primeiraLetra}</AvatarFallback>
+                                        </Avatar>
+                                        <div className="flex-1">
+                                            <div className="font-medium"> {nome} {sobrenome} </div>
+                                            <div className="text-muted-foreground text-sm"> {email} </div> 
+                                        </div>
+                                        {documentData ? (
+                                          <div className="text-muted-foreground text-sm">{documentData.DataEnvio}</div>
+                                        ) : (
+                                          <h1></h1>
+                                        )}
+                                    </div>
+                                    
+                                    <div className="prose">
+                                        {documentData ? (
+                                            <>
+                                                <p><br/> {documentData.Descricao}</p>
+                                                <p className="text-muted-foreground text-sm"><br/> Prazo de Entrega: {documentData.DataEntrega}</p><br/>
+                                                <a href={documentData.CaminhoArquivo} target="_blank" rel="noopener noreferrer">
+                                                  <Button>Abrir PDF</Button>
+                                                </a>
+                                            </>
 
-
-                          {/* Aba Datalhes do Envio */}
-                          <div className="p-4 flex flex-col gap-4">
-                              <div className="flex items-center gap-3">
-                                  <Avatar className="h-9 w-9">
-                                      <AvatarFallback>{primeiraLetra}</AvatarFallback>
-                                  </Avatar>
-                                  
-                                  <div className="flex-1">
-                                      <div className="font-medium"> {nome} {sobrenome} </div>
-                                      <div className="text-muted-foreground text-sm"> {email} </div> 
-                                  </div>
-
-                                  {documentData ? (
-                                    <div className="text-muted-foreground text-sm">{documentData.DataEnvio}</div>
-                                  ) : (
-                                    <h1></h1>
-                                  )}
+                                        ) : (
+                                            <h1 className="text-muted-foreground text-sm"><br/>Clique no título do envio para ver mais detalhes</h1>
+                                        )}
+                                    </div>
                               </div>
-                              
-                              <div className="prose">
-                                
-                                  {documentData ? (
-                                      <>
-                                          {/* <p className="text-muted-foreground text-sm">Data de Envio: {formatDateToBR(documentData.DataEnvio)}</p> */}
-                                          <p><br/> {documentData.Descricao}</p>
-                                          <a href={documentData.CaminhoArquivo} target="_blank" rel="noopener noreferrer">
-                                            <p className="text-muted-foreground text-sm"><br/> Prazo de Entrega: {documentData.DataEntrega}</p><br/>
-                                            <Button>Abrir PDF</Button>
-                                          </a>
-                                          
-                                      </>
-                                  ) : (
-                                      <h1 className="text-muted-foreground text-sm"><br/>Clique no título do envio para ver mais detalhes</h1>
-                                  )}
-                              </div>
-                        </div>
+                            )}
+                        </>
                     </div>
                 </div>
             </div>
         </div>
-    )
+    </>
+  )
 }
 
 
