@@ -5,46 +5,55 @@ import { useRouter } from 'next/navigation';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useSearchParams } from 'next/navigation';
+import SvgComponentClaro from "@/components/ui/logoClaro";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { collection, query, where, getDocs, getFirestore, doc, getDoc } from "firebase/firestore";
+import { Dialog,  DialogContent, DialogHeader, DialogTitle, DialogTrigger,} from "@/components/ui/dialog"
+import { collection, query, where, getDocs, deleteDoc, getFirestore, doc, getDoc, addDoc, DocumentData } from "firebase/firestore";
+import { SquareCheckBig } from 'lucide-react';
+import { UsersRound } from 'lucide-react';
+import { RotateCw } from 'lucide-react';
+import { Layers3 } from 'lucide-react';
+import { Archive } from 'lucide-react';
+import { Trash2 } from 'lucide-react'
 import { app } from '../firebase/firebase'; 
-import { Label } from "@/components/ui/label";
+
 
 const db = getFirestore(app);
 
 
 export default function telaEmpresa() {
-    //Puxando o email do usuário pela URL
+    //Puxando o ID do usuário pela URL
     const searchParams = useSearchParams();
-    const email = searchParams.get('email');
+    const uid = searchParams.get('uid');
     //Informações do usuário conectado
     const [nome, setNome] = useState('');
     const [sobrenome, setSobrenome] = useState('');
+    const [email, setEmail] = useState('');
     const primeiraLetra = nome.slice(0, 2);
-    //Informações dos Advogados que enviaram trabalhos
-    const [nomeAdvogado, setNomeAdvogado] = useState('');
-    const [sobrenomeAdvogado, setSobrenomeAdvogado] = useState('');
-    const [emailAdvogado, setEmailAdvogado] = useState('');
-    const primeiraLetraAdv = nomeAdvogado.slice(0, 2);
     //Pegando os orçamentos no BD
     const [orcamentos, setOrcamentos] = useState<DocumentData[]>([]);
     const [documentData, setDocumentData] = useState<DocumentData | null>(null);
-    const [descricao, setDescricaoOrcamento] = useState('');
+    // const [caminhoArquivo, setCaminhoArquivo] = useState<string>('');
     //Extras
     const [loading, setLoading] = useState(true); 
     const router = useRouter();   
 
 
     interface DocumentData {
-      DataEnvio: string;
-      DataEntrega: string;
-      Descricao: string;
       CaminhoArquivo: string;
+      DataEntrega: string;
+      DataEnvio: string;  
+      Descricao: string;
+      Email: string;
+      Nome: string;
+      Sobrenome: string;
       Status: string;
-      cpfAdvogado: string;
+      Telefone: string;
       Titulo: string;
+      cpf: string;
       id: string;
-    }
+    };
+
     
 
     // Função para o botão de recarregar a página
@@ -54,36 +63,25 @@ export default function telaEmpresa() {
 
     //Redireciona para a tela 
     const handleClick = () => {
-      // router.push(`/envioArquivo?email=${email}`);
+      // router.push(`/envioArquivo?uid=${uid}`);
     };
 
-    //Função para buscar os dados do advogado com base no CPF
-    const fetchAdvogado = async (cpf: string) => {
-      try {
-          const q = query(collection(db, "Advogado"), where("cpf", "==", cpf));
-          const querySnapshot = await getDocs(q);
-          if (!querySnapshot.empty) {
-              const advogadoData = querySnapshot.docs[0].data();
-              setNomeAdvogado(advogadoData.nome);           //Define o nome do advogado
-              setSobrenomeAdvogado(advogadoData.sobrenome); //Define o sobrenome do advogado
-              setEmailAdvogado(advogadoData.email);         //Define o email do advogado
-          } else {
-              console.log("Erro ao buscar dados");
-          }
-      } catch (error) {
-          console.error("Erro", error);
-      }
-    };
+    const NavegadorHome = () => {
+      router.push(`/`);
+    }
+    const NavegadorCadastrarFuncionario = () => {
+      router.push(`/cadastrarFuncionario?uid=${uid}`);
+    }
 
-    //Função para buscar os dados do documento no Firestore
-    const fetchDocumentData = async (docId: string) => {
+  
+    //Função para buscar os dados do documento PDF no Firestore
+    const fetchDocumentData = async (docId: string) => { //Recebe o ID do documento como parâmetro
       try {
-        const docRef = doc(db, 'Orcamento', docId);
+        const docRef = doc(db, 'OrcamentosEnviados', docId); //Localiza o documento com base no ID dele
         const docSnapshot = await getDoc(docRef);
         if (docSnapshot.exists()) {
           const data = docSnapshot.data() as DocumentData;
           setDocumentData(data);
-          fetchAdvogado(data.cpfAdvogado); //Aproveitando para mandar o cpf do advogado (que tbm está na coleção Orcamento) para a função fetchAdvogado
         } else {
           console.log('Documento não encontrado');
         }
@@ -93,22 +91,24 @@ export default function telaEmpresa() {
     };
     
 
+    //Hook com as consultas nas coleções Empresa e OrcamentosEnviados
     useEffect(() => {
-      const fetchNome = async () => {
+      const fetchInfo = async () => {
           setLoading(true); // Inicia o estado de carregamento
-
           try {
-              //Pega as informações do ADM com base no email da URL
-              const q = query(collection(db, "Empresa"), where("email", "==", email)); //Pega os dados da coleção "Empresa" com base no email
-              const querySnapshot = await getDocs(q); //Executa a consulta e retorna um snapshot contendo os documentos que correspondem à condição
-
-              //Pega os arquivos no Banco de Dados caso querySnapshot não esteja vazio
+              //Pega as informações do ADM com base no ID da URL
+              const q = query(collection(db, "Empresa"), where("uid", "==", uid));
+              const querySnapshot = await getDocs(q);
               if (!querySnapshot.empty) {
-                  console.log("Dados do Usuário:", querySnapshot.docs[0].data());
                   const empresaData = querySnapshot.docs[0].data();
-                  const orcamentoQuery = query(collection(db, 'Orcamento'));  //Pega todos os documentos da coleção "Orcamento"
-                  const orcamentoSnapshot = await getDocs(orcamentoQuery);
+                  setNome(empresaData.nome);
+                  setSobrenome(empresaData.sobrenome);
+                  setEmail(empresaData.email);
+                  console.log("Dados do Usuário:", querySnapshot.docs[0].data());
                   
+                  //Aproveitando para pegar os documentos do BD
+                  const orcamentoQuery = query(collection(db, 'OrcamentosEnviados'));
+                  const orcamentoSnapshot = await getDocs(orcamentoQuery);
                   const orcamentoList = orcamentoSnapshot.docs.map(doc => {
                     const data = doc.data() as DocumentData; //Realizando a tipagem de orcamentoList com DocumentData
                     return {
@@ -116,62 +116,58 @@ export default function telaEmpresa() {
                       id: doc.id,
                     };
                   });
-
-                  setOrcamentos(orcamentoList);        //Finaliza a busca pelos arquivos
-                  setSobrenome(empresaData.sobrenome); //Sobrenome do ADM
-                  setNome(empresaData.nome);           //Nome do ADM
+                  setOrcamentos(orcamentoList); //Coloca os documentos em uma lista, que será posteriormente percorrida pelo map
               } else {
-                console.error("Advogado não encontrado!");
+                console.error("Dados não encontrados");
               }
           } catch (error) {
-              console.error("Ocorreu um erro oa buscar o nome no banco de dados");
               setNome('Erro ao carregar nome'); //Transforma a variável "nome" na mensagem: "Erro ao carregar nome"
           } finally {
               setLoading(false); //Finaliza o estado de carregamento, independentemente da consulta ser um sucesso ou falhar
           }
       };
-
-      if (email) {
-          fetchNome(); //Chama a função fetchNome(), que está dentro do hook. Ela pega informações do Firebase
+      if (uid) {
+        fetchInfo(); //Chama a função fetchNome(), que está dentro do hook. Ela pega informações do Firebase
       }
-  }, [email]); //Sempre que a variável 'email' mudar, o useEffect será executado, pois ela está listada nas dependências do hook
+  }, [uid]); //Sempre que a variável 'uid' mudar, o useEffect será executado, pois ela está listada nas dependências do hook
 
 
     return (
       <>
         <div className="grid md:grid-cols-[260px_1fr] min-h-screen w-full">
             <div className="flex flex-col bg-background text-foreground border-r">
-                <header className="flex items-center p-6 border-b">
+                <header className="flex items-center p-4">
                     <>
                       {loading ? (
-                          <br></br> // Para deixar em branco enquanto carrega o nome do user
+                        <>
+                           <div className="p-5"/>
+                        </>
                       ) : (
-                          <h1>Bem-vindo, {nome}</h1> 
-                      )}
+                          <>
+                            <button onClick={NavegadorHome} className='pl-5 pt-1'>
+                              <SvgComponentClaro />
+                            </button>
+                          </>
+                      )} 
                     </>
                 </header>
 
                 <nav className="flex flex-col gap-1 p-2">
-                    {/* A parte de enviar orçamento fazer na aba "Detalhes do envio", que terá um campo onde o ADM enviará uma mensagem para o Advogado */}
-                    {/* <Button variant="ghost" className="justify-start gap-2 px-3 py-2 rounded-md hover:bg-muted" onClick={handleClick}>
-                        <SendIcon className="w-5 h-5" />
-                        Enviar Orçamento
-                    </Button> */} 
-                    <Button variant="ghost" className="justify-start gap-2 px-3 py-2 rounded-md hover:bg-muted">
-                        <UsersIcon className="w-5 h-5" />
-                        Gerenciar Colaborador
+                    <Button variant="ghost" className="justify-start gap-2 px-3 py-2 rounded-md hover:bg-muted" onClick={NavegadorCadastrarFuncionario}>
+                        <UsersRound className='h-5 w-5' />
+                        Cadastrar Funcionario
                     </Button>
                     <Button variant="ghost" className="justify-start gap-2 px-3 py-2 rounded-md hover:bg-muted">
-                        <ArchiveIcon className="w-5 h-5" />
-                        Trabalhos em processo
-                    </Button>
-                    <Button variant="ghost" className="justify-start gap-2 px-3 py-2 rounded-md hover:bg-muted">
-                        <ArchiveIcon className="w-5 h-5" />
+                        <SquareCheckBig className='h-5 w-5' />
                         Trabalhos Concluídos
                     </Button>
                     <Button variant="ghost" className="justify-start gap-2 px-3 py-2 rounded-md hover:bg-muted">
-                        <ArchiveIcon className="w-5 h-5" />
-                        Lixeira
+                        <Layers3 className='h-5 w-5' />
+                        Trabalhos em Processo
+                    </Button>
+                    <Button variant="ghost" className="justify-start gap-2 px-3 py-2 rounded-md hover:bg-muted">
+                        <Archive className="w-5 h-5" />
+                        Trabalhos Arquivados
                     </Button>
                 </nav>
             </div>
@@ -181,12 +177,11 @@ export default function telaEmpresa() {
                     <div className="flex-1">
                         <Input type="search" placeholder="Pesquisar trabalhos" className="rounded-50  " />
                     </div>
-                    <h1>Filtros(data de envio)</h1>
                     <Button variant="ghost" size="icon" onClick={handleRefresh}>
-                        <RefreshCcwIcon className="w-5 h-5" />
+                        <RotateCw className="w-5 h-5" />
                     </Button>
                     <Avatar className="h-9 w-9">
-                        <AvatarFallback> {primeiraLetra} </AvatarFallback>
+                        <AvatarFallback> {primeiraLetra}  </AvatarFallback>
                     </Avatar>
                 </header>
 
@@ -200,15 +195,22 @@ export default function telaEmpresa() {
                         </div>
 
                         <div className="divide-y">
-                            {orcamentos.map((orcamento, index) => (
-                                <div className="flex items-center gap-3 p-3 hover:bg-[#efefef]" key={index} onClick={() => fetchDocumentData(orcamento.id)}>
+                            {orcamentos.map((OrcamentosEnviados, index) => (
+                                <div className="flex items-center gap-3 p-3 hover:bg-[#efefef]" key={index} onClick={() => fetchDocumentData(OrcamentosEnviados.id)}>
                                     <div className='h-3 w-3 rounded-full bg-[#e6df30]'/>
-                                    <div className="flex items-center justify-between w-full p-3 hover:cursor-pointer ">
-                                      
+                                    <div className="flex items-center w-full p-3 hover:cursor-pointer ">
                                         <h1 className="cursor-pointer text-blue-500" >
-                                            {orcamento.Titulo}
-                                        </h1>
-                                        <h1 className="text-muted-foreground text-sm">Status: {orcamento.Status}</h1>
+                                          <div>
+                                            {OrcamentosEnviados.Titulo}
+                                          </div>
+                                          <div className='text-muted-foreground text-sm'>
+                                            Adv. {OrcamentosEnviados.Nome} {OrcamentosEnviados.Sobrenome}
+                                          </div>
+                                        </h1> 
+                                        <div className="ml-auto flex items-center space-x-6">
+                                          <h1 className="text-muted-foreground text-sm">Status: {OrcamentosEnviados.Status}</h1>
+                                          <Confirmation dd={OrcamentosEnviados} />
+                                        </div>
                                     </div>
                                 </div>  
                             ))}
@@ -216,7 +218,7 @@ export default function telaEmpresa() {
                     </div>
 
 
-                    {/* // Aba Datalhes do Envio */}
+                    {/* Aba Datalhes do Envio */}
                     <div className="bg-muted rounded-md overflow-hidden flex-1">
                         <div className="border-b p-3 bg-background">
                             <div className="font-medium pb-5">Detalhes do envio</div>
@@ -230,11 +232,11 @@ export default function telaEmpresa() {
                                   <>
                                     <div className="flex items-center gap-3">
                                         <Avatar className="h-9 w-9">
-                                            <AvatarFallback>{primeiraLetraAdv}</AvatarFallback>
+                                            <AvatarFallback>{documentData.Nome ? documentData.Nome.slice(0, 2) : ''}</AvatarFallback>
                                         </Avatar>
                                         <div className="flex-1">
-                                            <div className="font-medium"> {nomeAdvogado} {sobrenomeAdvogado} </div>
-                                            <div className="text-muted-foreground text-sm"> {emailAdvogado} </div> 
+                                            <div className="font-medium"> {documentData.Nome} {documentData.Sobrenome} </div>
+                                            <div className="text-muted-foreground text-sm"> {documentData.Email} </div> 
                                         </div>
                                           <div className="text-muted-foreground text-sm">{documentData.DataEnvio}</div>
                                     </div>
@@ -242,24 +244,7 @@ export default function telaEmpresa() {
                                     <div className="prose">
                                         <p><br/> {documentData.Descricao}</p>
                                         <p className="text-muted-foreground text-sm"><br/> Prazo de Entrega: {documentData.DataEntrega}</p><br/>
-                                        
-                                        <a href={documentData.CaminhoArquivo} target="_blank" rel="noopener noreferrer">
-                                          <Button>Abrir PDF</Button>
-                                        </a>
-
-                                        <div className='mt-7'>
-
-                                        <Label htmlFor="descricao">Escreva ao cliente</Label>
-                                        <Input
-                                            id="descricao"
-                                            type="text"
-                                            placeholder="Informe o orçamento ao cliente"
-                                            value={descricao}
-                                            onChange={(e) => setDescricaoOrcamento(e.target.value)}
-                                            required
-                                        />
-                                        </div>
-
+                                        <PDFViewer pdfUrl={documentData.CaminhoArquivo} />
                                     </div>  
                                 </>
 
@@ -268,7 +253,7 @@ export default function telaEmpresa() {
                                   <div className="flex flex-col gap-4">
                                     <div className="flex items-center gap-3">
                                         <Avatar className="h-9 w-9">
-                                            <AvatarFallback>{primeiraLetraAdv}</AvatarFallback>
+                                            <AvatarFallback>{primeiraLetra}</AvatarFallback>
                                         </Avatar>
                                         <div className="flex-1">
                                             <div className="font-medium"> {nome} {sobrenome} </div>
@@ -288,93 +273,107 @@ export default function telaEmpresa() {
         </div>
       </>
     )
-}
- 
+  }
 
-function ArchiveIcon(props: React.SVGProps<SVGSVGElement>) {
+
+
+interface Property {
+  pdfUrl: string
+}
+
+export function PDFViewer({ pdfUrl }: Property) {
   return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <rect width="20" height="5" x="2" y="3" rx="1" />
-      <path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8" />
-      <path d="M10 12h4" />
-    </svg>
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button>Visualizar PDF</Button>
+      </DialogTrigger>
+
+      <DialogContent className="max-w-7xl max-h-[90vh]">
+        <DialogHeader>
+          <DialogTitle>Visualizador de PDF</DialogTitle>
+        </DialogHeader>
+
+        <div className='flex-auto'>
+          <div className=" h-[calc(90vh-100px)]">
+            <iframe
+              src={`${pdfUrl}#toolbar=0`}
+              width="70%"
+              height="100%"
+              style={{ border: 'none' }}
+            >
+            </iframe> 
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   )
 }
 
 
-function RefreshCcwIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-      <path d="M3 3v5h5" />
-      <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
-      <path d="M16 16h5v5" />
-    </svg>
-  )
+interface ConfirmationProps {
+  dd: DocumentData;
 }
 
+// Função com uma Modal de confirmação para arquivar os orçamentos
+export function Confirmation({ dd }: ConfirmationProps) {
+  const [isOpen, setIsOpen] = useState(false)
+  
+  //Botão para confirmar o arquivamento
+  const btnArquivar = async() => {
+    //Enviando para a coleção OrcamentosArquivados
+    const OrcamentosArquivadosCollectionRef = collection(db, "OrcamentosArquivados");
+    await addDoc(OrcamentosArquivadosCollectionRef, {
+      cpf: dd.cpf,
+      Nome: dd.Nome,
+      Sobrenome: dd.Sobrenome,
+      Email: dd.Email,
+      Telefone: dd.Telefone,
+      Titulo: dd.Titulo,
+      Descricao: dd.Descricao,
+      DataEntrega: dd.DataEntrega,
+      DataEnvio: dd.DataEnvio,
+      CaminhoArquivo: dd.CaminhoArquivo,
+      Status: "Arquivado"
+    });
 
-function SendIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="m22 2-7 20-4-9-9-4Z" />
-      <path d="M22 2 11 13" />
-    </svg>
-  )
-}
+    //Excluindo o orçamento arquivado da coleção Orcamento
+    const OrcamentosEnviadosDocRef = doc(db, "OrcamentosEnviados", dd.id);
+    await deleteDoc(OrcamentosEnviadosDocRef);
+    setIsOpen(false);         //Fecha a modal
+    window.location.reload(); //Atualiza os orçamentos na tela
+  } 
+
+  //Botão para cancelar o arquivamento
+  const btnCancelar = () => {
+    setIsOpen(false); //Fecha a modal
+  }
 
 
-function UsersIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-      <circle cx="9" cy="7" r="4" />
-      <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-    </svg>
+  return(
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger>
+        <Button variant="ghost" size="icon">
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w[425px]">
+        <DialogHeader>
+          <DialogTitle className='text-2x1 font-bold text-center'> 
+            Arquivar Orçamento
+          </DialogTitle>
+        </DialogHeader>
+        <div className='mt-6 text-center'>
+          <p className='text-gray-500'>Tem certeza que deseja arquivar {dd.Titulo}?</p>
+        </div>
+        <div className='mt-6 flex flex-col sm:flex-row justify-center gap-4'>
+          <Button variant="destructive" onClick={btnArquivar}>
+            Arquivar
+          </Button>
+          <Button variant="outline" onClick={btnCancelar}>
+            Cancelar
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
   )
 }

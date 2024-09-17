@@ -15,13 +15,14 @@ import { db } from "../firebase/firebase";
 
 
 export default function EnvioArquivo() {
-    const router = useRouter(); 
+    
     //Informações do Advogado
     const searchParams = useSearchParams();
-    const email = searchParams.get("email");
+    const uid = searchParams.get("uid");
     const [nome, setNome] = useState('');
     const [sobrenome, setSobrenome] = useState('');
     const [telefone, setTelefone] = useState('');
+    const [email, setEmail] = useState('');
     //Informações do Documento
     const [cpf, setCpf] = useState('');
     const [titulo, setTitulo] = useState('');
@@ -31,13 +32,15 @@ export default function EnvioArquivo() {
     const [dataComparacao, setDataComparacao] = useState('');
     const [dataEscolhidaBr, setDataEscolhidaBr] = useState('');
     const [arquivo, setArquivo] = useState<File | null>(null);
+    //Extra
+    const router = useRouter(); 
 
 
-    // Pega os dados do Advogado a partir do email da URL
+    // Pega os dados do Advogado a partir do ID da URL
     useEffect(() => {
         async function fetchCpf() {
-            if (email) {
-                const q = query(collection(db, "Advogado"), where("email", "==", email));
+            if (uid) {
+                const q = query(collection(db, "Advogado"), where("uid", "==", uid));
                 const querySnapshot = await getDocs(q);
                 if (!querySnapshot.empty) {
                     const advogadoDoc = querySnapshot.docs[0];
@@ -46,11 +49,12 @@ export default function EnvioArquivo() {
                     setNome(advogadoData.nome);
                     setSobrenome(advogadoData.sobrenome);
                     setTelefone(advogadoData.telefone);
+                    setEmail(advogadoData.email);
                 }
             }
         }
         fetchCpf();  // Chama a função para buscar o CPF
-    }, [email]);  // Como o useEffect recebe o email como parâmetro, o hook será disparado quando o email mudar 
+    }, [uid]);  // Como o useEffect recebe o ID como parâmetro, o hook será disparado quando o ID mudar 
    
 
     // Função para obter a data atual
@@ -98,12 +102,13 @@ export default function EnvioArquivo() {
 
     //Enviando para o Banco de Dados
     const handleUpload = async () => {
+
+        //Gerando uma URL para o arquivo que foi salvo no storage do Firebase
         if (!arquivo) {
             alert("Por favor, selecione um arquivo.");
             return;
         }
         const storageRef = ref(storage, `Documentos/${arquivo.name}`);
-    
         try {
             await uploadBytes(storageRef, arquivo);
             const downloadURL = await getDownloadURL(storageRef);
@@ -137,10 +142,15 @@ export default function EnvioArquivo() {
             });
 
             alert("Orçamento solicitado com sucesso!");
-            router.push(`/telaAdvogado?email=${email}`);
+            router.push(`/telaAdvogado?uid=${uid}`);
         } catch (error) {
             alert("Erro ao solicitar o orçamento: " + error);
         }
+    };
+
+    const handleDescricaoChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        setDescricao(e.target.value);
+        e.target.style.height = "auto"; // Redefine a altura para calcular a nova altura
     };
 
 
@@ -162,17 +172,19 @@ export default function EnvioArquivo() {
                                 value={titulo}
                                 onChange={(e) => setTitulo(e.target.value)}
                                 required
-                            />
-                        </div>
+                                className="w-full border border-gray-300 rounded-md p-2 placeholder:text-gray-400 placeholder:text-base, text-sm" 
+                            />  
+                        </div> 
                         <div className="space-y-2">
                             <Label htmlFor="descricao">Descrição</Label>
-                            <Input
+                            <textarea
                                 id="descricao"
-                                type="text"
                                 placeholder="Digite uma descrição"
                                 value={descricao}
-                                onChange={(e) => setDescricao(e.target.value)}
+                                onChange={handleDescricaoChange}
                                 required
+                                className="w-full border border-gray-300 rounded-md p-2 resize-none placeholder:text-gray-400 placeholder:text-base, text-sm"
+                                style={{ height: 'auto' }} 
                             />
                         </div>
                         <div className="space-y-2">

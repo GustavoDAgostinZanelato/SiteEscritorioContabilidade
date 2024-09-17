@@ -34,6 +34,17 @@ export default function Login() {
           console.log(uid)
       }
     }
+
+    if (email) {
+      const q = query(collection(db, "Empresa"), where("email", "==", email));
+      const querySnapshot = await getDocs(q);
+      if (!querySnapshot.empty) {
+          const empresaDoc = querySnapshot.docs[0];
+          const empresaData = empresaDoc.data();
+          setUid(empresaData.uid); 
+          console.log(uid)
+      }
+    }
   }
   fetchId();
 
@@ -61,14 +72,14 @@ export default function Login() {
       // Verifica se o email está na coleção Advogado
       const usuarioAdvogado = await verificarUsuario(email, "Advogado");
       if (usuarioAdvogado && usuarioAdvogado.senha === senha) {
-        router.push(`/telaAdvogado?email=${email}`);
+        router.push(`/telaAdvogado?uid=${uid}`);
         return;
       }
 
       // Verifica se o email está na coleção Empresa
       const usuarioEmpresa = await verificarUsuario(email, "Empresa");
       if (usuarioEmpresa && usuarioEmpresa.senha === senha) {
-        router.push(`/telaEmpresa?email=${email}`);
+        router.push(`/telaEmpresa?uid=${uid}`);
         return;
       }
       
@@ -125,7 +136,7 @@ export default function Login() {
         </TabsContent>
   
         <TabsContent value="register"> 
-          <SignUp /> 
+          <SignUp  /> 
         </TabsContent>
 
       </Tabs>
@@ -146,8 +157,27 @@ function SignUp() {
   const [telefone, setTelefone] = useState("");
   const router = useRouter(); 
 
+
+  //Pega o ID do advogado do BD e redireciona o usuario para a /telaAdvogado
+  async function fetchId() {
+    if (email) {
+      const q = query(collection(db, "Advogado"), where("email", "==", email));
+      const querySnapshot = await getDocs(q);
+      if (!querySnapshot.empty) {
+          const advogadoDoc = querySnapshot.docs[0];
+          const advogadoData = advogadoDoc.data();
+          // setUid(advogadoData.uid);
+          const uid = advogadoData.uid; // Obtenha o uid 
+          console.log(uid);
+          router.push(`/telaAdvogado?uid=${uid}`);
+      }
+    }
+  } 
+  
+
   // Função handleSignUp para criar conta
   const handleSignUp = async () => {
+ 
     try {
       // Verifica se todos os campos foram preenchidos
       if (cpf.length === 0 || email.length === 0 || nome.length === 0 || sobrenome.length === 0 || senha.length === 0 || telefone.length === 0) {
@@ -190,15 +220,15 @@ function SignUp() {
         alert("Este e-mail já está em uso. Tente fazer login ou use outro e-mail.");
         return;
       }
-      
+
       // Caso o registro seja um sucesso
       await registrarComEmailESenha(cpf, nome, sobrenome, email, senha, telefone);
-      console.log("Usuário registrado com sucesso!")
-      router.push(`/telaAdvogado?email=${email}`);
-  
+      console.log("Usuário registrado com sucesso!");
+      alert("Conta criada com sucesso!");
+      fetchId()
     } catch (error) {
-      console.log(1)
-    }
+      console.log("Erro ao criar nova conta")
+    };
   };
 
 

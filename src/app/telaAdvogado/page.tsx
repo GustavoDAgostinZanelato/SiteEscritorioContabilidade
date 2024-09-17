@@ -5,22 +5,32 @@ import { useRouter } from 'next/navigation';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useSearchParams } from 'next/navigation';
+import SvgComponentClaro from "@/components/ui/logoClaro";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { collection, query, where, getDocs, getFirestore, doc, getDoc } from "firebase/firestore";
-import { app } from '../firebase/firebase'; 
+import { Dialog,  DialogContent, DialogHeader, DialogTitle, DialogTrigger,} from "@/components/ui/dialog"
+import { collection, query, where, getDocs, deleteDoc, getFirestore, doc, getDoc, addDoc, DocumentData } from "firebase/firestore";
+import { SquareCheckBig } from 'lucide-react';
+import { RotateCw } from 'lucide-react';
+import { Layers3 } from 'lucide-react';
+import { Archive } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
+import { Send } from 'lucide-react';
+import { app } from '../firebase/firebase';
 
 
 const db = getFirestore(app);
 
 
 export default function TelaAdvogado() {
-    //Puxando o email do Advogado da URL
+    //Puxando o ID do Advogado da URL
     const searchParams = useSearchParams();
-    const email = searchParams.get('email');
+    const uid = searchParams.get('uid');
     //Informações do Advogado
     const [nome, setNome] = useState('');
-    const [cpf, setCpf] = useState('');
     const [sobrenome, setSobrenome] = useState('');
+    const [email, setEmail] = useState('');
+    const [telefone, setTelefone] = useState('');
+    const [cpf, setCpf] = useState('');
     const primeiraLetra = nome.slice(0, 2);
     //Pegando os orçamentos no BD
     const [orcamentos, setOrcamentos] = useState<any[]>([]);
@@ -31,11 +41,12 @@ export default function TelaAdvogado() {
 
 
     interface DocumentData {
-      DataEnvio: string;
-      DataEntrega: string;
-      Descricao: string;
       CaminhoArquivo: string;
+      DataEntrega: string;
+      DataEnvio: string;  
+      Descricao: string;
       Status: string;
+      Titulo: string;
     }
     
 
@@ -46,7 +57,11 @@ export default function TelaAdvogado() {
 
     //Redireciona para a tela 
     const handleClick = () => {
-      router.push(`/envioArquivo?email=${email}`);
+      router.push(`/envioArquivo?uid=${uid}`);
+    }
+
+    const NavegadorHome = () => {
+      router.push(`/`);
     }
 
     // Função para buscar os dados do documento no Firestore
@@ -70,17 +85,19 @@ export default function TelaAdvogado() {
         const fetchNome = async () => {
             setLoading(true); //Inicia o carregamento
             try {
-                //Pega as informações do Advogado com base no email da URL
-                const q = query(collection(db, "Advogado"), where("email", "==", email)); //Pega os dados da coleção "Empresa" com base no email
+                //Pega as informações do Advogado com base no ID da URL
+                const q = query(collection(db, "Advogado"), where("uid", "==", uid)); //Pega os dados da coleção "Empresa" com base no ID
                 const querySnapshot = await getDocs(q); //Executa a consulta e retorna um snapshot contendo os documentos que correspondem à condição
 
                 //Pega os arquivos no Banco de Dados caso querySnapshot não esteja vazio
                 if (!querySnapshot.empty) {
                     console.log("Documento encontrado:", querySnapshot.docs[0].data());
                     const advogadoData = querySnapshot.docs[0].data();
-                    setNome(advogadoData.nome);           //Nome do Advogado
-                    setCpf(advogadoData.cpf);             //CPF do Advogado
-                    setSobrenome(advogadoData.sobrenome); //Sobrenome do Advogado
+                    setNome(advogadoData.nome);         
+                    setSobrenome(advogadoData.sobrenome);
+                    setEmail(advogadoData.email); //Colocando email, telefone e cpf em um estado para mandar pra coleção OrcamentosArquivadosCPF
+                    setTelefone(advogadoData.telefone);
+                    setCpf(advogadoData.cpf);
                     
                     // Após buscar o CPF, busca os orçamentos do advogado
                     const orcamentoQuery = query(collection(db, 'Orcamento'), where('cpfAdvogado', '==', advogadoData.cpf));
@@ -93,9 +110,7 @@ export default function TelaAdvogado() {
                         id: doc.id,
                       };
                     });
-
                     setOrcamentos(orcamentoList);
-
                 } else {
                   console.error("Advogado não encontrado!");
                 }
@@ -106,46 +121,45 @@ export default function TelaAdvogado() {
                 setLoading(false); //Finaliza o estado de carregamento, independentemente da consulta ser um sucesso ou falhar
             }
         };
-
-        if (email) {
+        if (uid) {
             fetchNome(); //Chama a função fetchNome(), que está dentro do hook. Ela pega informações do Firebase
         }
-    }, [email]); //Sempre que a variável 'email' mudar, o useEffect será executado, pois ela está listada nas dependências do hook
+    }, [uid]); //Sempre que a variável 'uid' mudar, o useEffect será executado, pois ela está listada nas dependências do hook
 
     
     return (
       <>
         <div className="grid md:grid-cols-[260px_1fr] min-h-screen w-full">
             <div className="flex flex-col bg-background text-foreground border-r">
-                <header className="flex items-center p-6 border-b">
+                <header className="flex items-center p-4 ">
                     <>
                     {loading ? (
-                        <br></br> // Para deixar em branco enquanto carrega o nome do user
+                      <div className="p-5"/>
                     ) : (
-                        <h1>Bem-vindo, {nome} </h1> 
+                      <>
+                        <button onClick={NavegadorHome} className='pl-5 pt-1'>
+                          <SvgComponentClaro />
+                        </button>
+                      </>
                     )}
                     </>
                 </header>
                 <nav className="flex flex-col gap-1 p-2">
                     <Button variant="ghost" className="justify-start gap-2 px-3 py-2 rounded-md hover:bg-muted" onClick={handleClick}>
-                        <SendIcon className="w-5 h-5" />
+                        <Send className="w-5 h-5" />
                         Solicitar um Orçamento
                     </Button>
-                    {/* <Button variant="ghost" className="justify-start gap-2 px-3 py-2 rounded-md hover:bg-muted">
-                        <UsersIcon className="w-5 h-5" />
-                        Entre em contato
-                    </Button> */}
                     <Button variant="ghost" className="justify-start gap-2 px-3 py-2 rounded-md hover:bg-muted">
-                        <ArchiveIcon className="w-5 h-5" />
-                        Orçamentos Aprovados 
-                    </Button>
-                    <Button variant="ghost" className="justify-start gap-2 px-3 py-2 rounded-md hover:bg-muted">
-                        <ArchiveIcon className="w-5 h-5" />
+                        <SquareCheckBig className="w-5 h-5" />
                         Trabalhos Concluídos
                     </Button>
                     <Button variant="ghost" className="justify-start gap-2 px-3 py-2 rounded-md hover:bg-muted">
-                        <ArchiveIcon className="w-5 h-5" />
-                        Lixeira 
+                        <Layers3 className='h-5 w-5' />
+                        Trabalhos em Processo
+                    </Button>
+                    <Button variant="ghost" className="justify-start gap-2 px-3 py-2 rounded-md hover:bg-muted">
+                        <Archive className="w-5 h-5" />
+                        Trabalhos Arquivados 
                     </Button>
                 </nav>
             </div>
@@ -155,9 +169,8 @@ export default function TelaAdvogado() {
                     <div className="flex-1">
                         <Input type="search" placeholder="Pesquisar trabalhos" className="rounded-50  " />
                     </div>
-                    <h1>Filtros(data de envio)</h1>
                     <Button variant="ghost" size="icon" onClick={handleRefresh}>
-                        <RefreshCcwIcon className="w-5 h-5" />
+                        <RotateCw className="w-5 h-5" />
                     </Button>
                     <Avatar className="h-9 w-9">
                         <AvatarFallback> {primeiraLetra} </AvatarFallback>
@@ -176,13 +189,15 @@ export default function TelaAdvogado() {
                         <div className="divide-y">
                             {orcamentos.map((orcamento, index) => (
                                 <div className="flex items-center gap-3 p-3 hover:bg-[#efefef]" key={index} onClick={() => fetchDocumentData(orcamento.id)}>
-
                                     <div className='h-3 w-3 rounded-full bg-[#e6df30]'/>
-                                    <div className="flex items-center justify-between w-full p-3 hover:cursor-pointer ">
-                                        <h1 className="cursor-pointer text-blue-500" >
-                                            {orcamento.Titulo}
-                                        </h1>
+                                    <div className="flex items-center w-full p-3 hover:cursor-pointer ">
+                                      <h1 className="cursor-pointer text-blue-500" >
+                                          {orcamento.Titulo}
+                                      </h1>
+                                      <div className="ml-auto flex items-center space-x-6">
                                         <h1 className="text-muted-foreground text-sm">Status: {orcamento.Status}</h1>
+                                        <Confirmation dd={orcamento} cpf={cpf} nome={nome} sobrenome={sobrenome} email={email} telefone={telefone}/>
+                                      </div>
                                     </div>
                                 </div>  
                             ))}
@@ -224,7 +239,6 @@ export default function TelaAdvogado() {
                                                   <Button>Abrir PDF</Button>
                                                 </a>
                                             </>
-
                                         ) : (
                                             <h1 className="text-muted-foreground text-sm"><br/>Clique no título do envio para ver mais detalhes</h1>
                                         )}
@@ -241,90 +255,75 @@ export default function TelaAdvogado() {
 }
 
 
-function ArchiveIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <rect width="20" height="5" x="2" y="3" rx="1" />
-      <path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8" />
-      <path d="M10 12h4" />
-    </svg>
-  )
+interface ConfirmationProps {
+  dd: DocumentData;
+  cpf: string;
+  nome: string;
+  sobrenome: string;
+  email: string;
+  telefone: string;
 }
 
+// Função com uma Modal de confirmação para arquivar os orçamentos do Advogado
+export function Confirmation({ dd, cpf, nome, sobrenome, email, telefone }: ConfirmationProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  
+  //Botão para confirmar o arquivamento
+  const btnArquivar = async() => {
+    //Enviando para a coleção OrcamentosArquivadosADV
+    const OrcamentosArquivadosADVCollectionRef = collection(db, "OrcamentosArquivadosADV");
+    await addDoc(OrcamentosArquivadosADVCollectionRef, {
+      cpf: cpf,
+      Nome: nome,
+      Sobrenome: sobrenome,
+      Email: email,
+      Telefone: telefone,
+      Titulo: dd.Titulo,
+      Descricao: dd.Descricao,
+      DataEntrega: dd.DataEntrega,
+      DataEnvio: dd.DataEnvio,
+      CaminhoArquivo: dd.CaminhoArquivo,
+      Status: "Arquivado"
+    });
 
-function RefreshCcwIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-      <path d="M3 3v5h5" />
-      <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
-      <path d="M16 16h5v5" />
-    </svg>
-  )
-}
+    //Excluindo o orçamento arquivado da coleção Orcamento
+    const OrcamentosEnviadosDocRef = doc(db, "Orcamento", dd.id);
+    await deleteDoc(OrcamentosEnviadosDocRef);
+    setIsOpen(false);         //Fecha a Modal
+    window.location.reload(); //Atualiza os orçamentos na tela
+  } 
 
-
-function SendIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="m22 2-7 20-4-9-9-4Z" />
-      <path d="M22 2 11 13" />
-    </svg>
-  )
-}
+  //Botão para cancelar o arquivamento
+  const btnCancelar = () => {
+    setIsOpen(false); //Fecha a Modal
+  }
 
 
-function UsersIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-      <circle cx="9" cy="7" r="4" />
-      <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-    </svg>
+  return(
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger>
+        <Button variant="ghost" size="icon">
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w[425px]">
+        <DialogHeader>
+          <DialogTitle className='text-2x1 font-bold text-center'> 
+            Arquivar Orçamento
+          </DialogTitle>
+        </DialogHeader>
+        <div className='mt-6 text-center'>
+          <p className='text-gray-500'>Tem certeza que deseja arquivar {dd.Titulo}?</p>
+        </div>
+        <div className='mt-6 flex flex-col sm:flex-row justify-center gap-4'>
+          <Button variant="destructive" onClick={btnArquivar}>
+            Arquivar
+          </Button>
+          <Button variant="outline" onClick={btnCancelar}>
+            Cancelar
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
   )
 }
