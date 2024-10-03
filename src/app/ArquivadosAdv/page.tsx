@@ -3,14 +3,12 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { useSearchParams } from 'next/navigation';
-import { Textarea } from "@/components/ui/textarea";
 import SvgComponentClaro from "@/components/ui/logoClaro";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Dialog,  DialogContent, DialogHeader, DialogTitle, DialogTrigger,} from "@/components/ui/dialog"
-import { collection, query, where, getDocs, deleteDoc, getFirestore, doc, getDoc, addDoc } from "firebase/firestore";
+import { collection, query, where, getDocs, deleteDoc, getFirestore, doc, getDoc, addDoc, DocumentData, updateDoc } from "firebase/firestore";
 import { SquareCheckBig } from 'lucide-react';
 import { RotateCw } from 'lucide-react';
 import { Layers3 } from 'lucide-react';
@@ -24,7 +22,7 @@ import { app } from '../firebase/firebase';
 const db = getFirestore(app);
 
 
-export default function TelaAdvogado() {
+export default function ArquivadosAdv() {
     //Puxando o ID do Advogado da URL
     const searchParams = useSearchParams();
     const uid = searchParams.get('uid');
@@ -48,16 +46,14 @@ export default function TelaAdvogado() {
       DataEntrega: string;
       DataEnvio: string;  
       Descricao: string;
-      Status: string;
-      Titulo: string;
+      Email: string;
       Nome: string;
       Sobrenome: string;
+      Status: string;
       Telefone: string;
-      Email: string;
-      cpfAdvogado: string;
+      Titulo: string;
+      cpf: string;
       id: string;
-      valor: string;
-      feedbackOrcamento: string;
     };
     
     // Função para recarregar a página
@@ -69,18 +65,18 @@ export default function TelaAdvogado() {
     const NavegadorHome = () => {
       router.push(`/`);
     };
-    const NavegadorEnvioArquivo = () => {
-      router.push(`/envioArquivo?uid=${uid}`);
+    const NavegadorTelaAdvogado = () => {
+      router.push(`/telaAdvogado?uid=${uid}`);
     };
-    const NavegadorArquivadosAdv = () => {
-      router.push(`/ArquivadosAdv?uid=${uid}`);
+    const NavegadorEnvioArquivo  = () => {
+      router.push(`/envioArquivo?uid=${uid}`);
     };
 
 
     // Função para buscar os dados do documento no Firestore
     const fetchDocumentData = async (docId: string) => {
       try {
-        const docRef = doc(db, 'Orcamento', docId);
+        const docRef = doc(db, 'OrcamentosArquivados', docId);
         const docSnapshot = await getDoc(docRef);
         if (docSnapshot.exists()) {
           const data = docSnapshot.data() as DocumentData;
@@ -108,15 +104,18 @@ export default function TelaAdvogado() {
                     const advogadoData = querySnapshot.docs[0].data();
                     setNome(advogadoData.nome);         
                     setSobrenome(advogadoData.sobrenome);
-                    setEmail(advogadoData.email); //Colocando email, telefone e cpf em um estado para mandar pra coleção Orcamento
+                    setEmail(advogadoData.email); //Colocando email, telefone e cpf em um estado para mandar pra coleção OrcamentosArquivadosCPF
                     setTelefone(advogadoData.telefone);
                     setCpf(advogadoData.cpf);
                     
                     // Após buscar o CPF, busca os orçamentos do advogado
-                    const orcamentoQuery = query(collection(db, 'Orcamento'), where('cpfAdvogado', '==', advogadoData.cpf));
-                    const orcamentoSnapshot = await getDocs(orcamentoQuery); //orcamentoSnapshot espera até todos os documentos serem buscados
-
-                    const orcamentoList = orcamentoSnapshot.docs.map(doc => {
+                    const OrcamentosArquivadosQuery = query(collection(db, 'OrcamentosArquivados'), 
+                    where('cpfAdvogado', '==', advogadoData.cpf), 
+                    where("cpfEmpresa", "==", "null"),
+                    where('Status', '==', "Arquivado" && "Recusado pelo Escritório")
+                  );
+                    const OrcamentosArquivadosSnapshot = await getDocs(OrcamentosArquivadosQuery); //orcamentoSnapshot espera até todos os documentos serem buscados
+                    const orcamentoList = OrcamentosArquivadosSnapshot.docs.map(doc => {
                       const data = doc.data() as DocumentData; //Realizando a tipagem de orcamentoList com DocumentData
                       return {
                         ...data,
@@ -158,7 +157,7 @@ export default function TelaAdvogado() {
                     </>
                 </header>
                 <nav className="flex flex-col gap-1 p-2">
-                    <Button variant="ghost" className="justify-start gap-2 px-3 py-2 rounded-md hover:bg-muted">
+                    <Button variant="ghost" className="justify-start gap-2 px-3 py-2 rounded-md hover:bg-muted" onClick={NavegadorTelaAdvogado} >
                         <House className="w-5 h-5" />
                         Página Inicial
                     </Button>
@@ -174,7 +173,7 @@ export default function TelaAdvogado() {
                         <Layers3 className='h-5 w-5' />
                         Trabalhos em Processo
                     </Button>
-                    <Button variant="ghost" className="justify-start gap-2 px-3 py-2 rounded-md hover:bg-muted" onClick={NavegadorArquivadosAdv} >
+                    <Button variant="ghost" className="justify-start gap-2 px-3 py-2 rounded-md hover:bg-muted" >
                         <Archive className="w-5 h-5" />
                         Trabalhos Arquivados 
                     </Button>
@@ -199,21 +198,31 @@ export default function TelaAdvogado() {
                 <div className="grid md:grid-cols-[1fr_400px] gap-4 p-4 flex-1">
                     <div className=" rounded-md overflow-hidden flex-1">
                         <div className="border-b p-3 bg-background">
-                            <div className="font-medium">Seus envios</div>
-                            <div className="text-muted-foreground text-sm"> Trabalhos enviados: {orcamentos.length} </div>
+                            <div className="font-medium">Documentos Arquivados</div>
+                            <div className="text-muted-foreground text-sm"> Trabalhos arquivados: {orcamentos.length} </div>
                         </div>
 
                         <div className="divide-y">
-                            {orcamentos.map((orcamento, index) => (
-                                <div className="flex items-center gap-3 p-3 hover:bg-[#efefef]" key={index} onClick={() => fetchDocumentData(orcamento.id)}>
-                                    <div className='h-3 w-3 rounded-full bg-[#e6df30]'/>
+                            {orcamentos.map((orcamentosArquivados, index) => (
+                                <div className="flex items-center gap-3 p-3 hover:bg-[#efefef]" key={index} onClick={() => fetchDocumentData(orcamentosArquivados.id)}>
+                                    <div className='h-3 w-3 rounded-full bg-[#e63330]'/>
                                     <div className="flex items-center w-full p-3 hover:cursor-pointer ">
                                       <h1 className="cursor-pointer text-blue-500" >
-                                          {orcamento.Titulo}
+                                          {orcamentosArquivados.Titulo}
                                       </h1>
                                       <div className="ml-auto flex items-center space-x-6">
-                                        <h1 className="text-muted-foreground text-sm">Status: {orcamento.Status}</h1>
-                                        <ConfirmarArquivamento dd={orcamento} cpf={cpf} nome={nome} sobrenome={sobrenome} email={email} telefone={telefone}/>
+                                      <h1 className="text-muted-foreground text-sm">
+                                        Status: {typeof orcamentosArquivados.Status === 'string' && orcamentosArquivados.Status.split('\n').map((line: string, index: number) => (
+                                          <span key={index}>
+                                            {line}
+                                            <br />
+                                          </span>
+                                        ))}
+                                      </h1>
+
+                                        <ConfirmationRestoreDoc dd={orcamentosArquivados} cpf={cpf} nome={nome} sobrenome={sobrenome} email={email} telefone={telefone} />
+                                        <ConfirmationDeleteDoc dd={orcamentosArquivados} />
+
                                       </div>
                                     </div>
                                 </div>  
@@ -252,10 +261,9 @@ export default function TelaAdvogado() {
                                             <>
                                                 <p><br/> {documentData.Descricao}</p>
                                                 <p className="text-muted-foreground text-sm"><br/> Prazo de Entrega: {documentData.DataEntrega}</p><br/>
-                                                {/* <a href={documentData.CaminhoArquivo} target="_blank" rel="noopener noreferrer">
+                                                <a href={documentData.CaminhoArquivo} target="_blank" rel="noopener noreferrer">
                                                   <Button>Abrir PDF</Button>
-                                                </a> */}
-                                                <VisualizadorPDF documentData={documentData}/>
+                                                </a>
                                             </>
                                         ) : (
                                             <h1 className="text-muted-foreground text-sm"><br/>Clique no título do envio para ver mais detalhes</h1>
@@ -273,60 +281,30 @@ export default function TelaAdvogado() {
 }
 
 
-//Sistema com uma Modal de confirmação para arquivar os orçamentos do Advogado
-interface ConfirmationProps {
+interface ConfirmationDeleteDocProps {
   dd: DocumentData;
-  cpf: string;
-  nome: string;
-  sobrenome: string;
-  email: string;
-  telefone: string;
 }
 
-export function ConfirmarArquivamento({ dd }: ConfirmationProps) {
+// Função com uma Modal de confirmação para deletar os orçamentos do Advogado
+export function ConfirmationDeleteDoc({ dd }: ConfirmationDeleteDocProps) {
   const [isOpen, setIsOpen] = useState(false);
   
-  //Botão para confirmar o arquivamento
-  const btnArquivar = async () => {
+  //Botão para confirmar a exclusão
+  const btnDeletar = async() => {
     try {
-      // Verifica se o status do documento no DocumentData é "Arquivado pelo Escritório"
-      let statusParaArquivar = "Arquivado";
-      if (dd.Status === "Arquivado pelo Escritório") {
-        statusParaArquivar = "Arquivado pelo Escritório";
-      }
-      // Verifica se o status do documento no DocumentData é "Recusado pelo Escritório"
-      if (dd.Status === "Recusado") {
-        statusParaArquivar = "Recusado pelo Escritório";
-      }
-  
-      // Enviando o documento para a coleção OrcamentosArquivados
-      const OrcamentosArquivadosADVCollectionRef = collection(db, "OrcamentosArquivados");
-      await addDoc(OrcamentosArquivadosADVCollectionRef, {
-        cpfAdvogado: dd.cpfAdvogado,
-        cpfEmpresa: "null",
-        Nome: dd.Nome,
-        Sobrenome: dd.Sobrenome,
-        Email: dd.Email,
-        Telefone: dd.Telefone,
-        Titulo: dd.Titulo,
-        Descricao: dd.Descricao,
-        DataEntrega: dd.DataEntrega,
-        DataEnvio: dd.DataEnvio,
-        CaminhoArquivo: dd.CaminhoArquivo,
-        Status: statusParaArquivar,  // Status com base na condição
+      const OrcamentosDocRef = doc(db, "OrcamentosArquivados", dd.id);
+      await updateDoc(OrcamentosDocRef, {
+        Status: "Documento Deletado"
       });
-  
-      // Excluindo o orçamento arquivado da coleção Orcamento
-      const OrcamentosEnviadosDocRef = doc(db, "Orcamento", dd.id);
-      await deleteDoc(OrcamentosEnviadosDocRef);
-  
       setIsOpen(false);         // Fecha a Modal
       window.location.reload(); // Atualiza os orçamentos na tela
     } catch (error) {
-      console.error("Erro ao arquivar o documento:", error);
+      console.error("Erro ao atualizar o status do documento arquivado:", error);
     }
-  }; 
-  //Botão para cancelar o arquivamento
+  };
+  
+
+  //Botão para cancelar a exclusão
   const btnCancelar = () => {
     setIsOpen(false); //Fecha a Modal
   }
@@ -341,15 +319,15 @@ export function ConfirmarArquivamento({ dd }: ConfirmationProps) {
       <DialogContent className="sm:max-w[425px]">
         <DialogHeader>
           <DialogTitle className='text-2x1 font-bold text-center'> 
-            Arquivar Orçamento
+            Deletar Orçamento
           </DialogTitle>
         </DialogHeader>
         <div className='mt-6 text-center'>
-          <p className='text-gray-500'>Tem certeza que deseja arquivar {dd.Titulo}?</p>
+          <p className='text-gray-500'>O arquivo "{dd.Titulo}" será deletado permanentemente. Deseja prosseguir?</p>
         </div>
         <div className='mt-6 flex flex-col sm:flex-row justify-center gap-4'>
-          <Button variant="destructive" onClick={btnArquivar}>
-            Arquivar
+          <Button variant="destructive" onClick={btnDeletar}>
+            Deletar
           </Button>
           <Button variant="outline" onClick={btnCancelar}>
             Cancelar
@@ -358,129 +336,94 @@ export function ConfirmarArquivamento({ dd }: ConfirmationProps) {
       </DialogContent>
     </Dialog>
   )
-};
-
-
-//Sistema de modal para o usuário vizualizar o documento PDF
-interface DocumentData {
-  CaminhoArquivo: string;
-  DataEntrega: string;
-  DataEnvio: string;  
-  Descricao: string;
-  Email: string;
-  Nome: string;
-  Sobrenome: string;
-  Status: string;
-  Telefone: string;
-  Titulo: string;
-  cpfAdvogado: string;
-  id: string;
-  valor: string;
-  feedbackOrcamento: string;
-}
-interface Property {
-  documentData: DocumentData;
 }
 
-export function VisualizadorPDF({ documentData }: Property) {
-  const [feedbackOrcamento, setFeedbackOrcamento] = useState('');
-  const [valorOrcamento, setValorOrcamento] = useState('');
-  const [isOpen, setIsOpen] = useState(false)
 
+interface ConfirmationRestoreDocProps {
+  dd: DocumentData;
+  cpf: string;
+  nome: string;
+  sobrenome: string;
+  email: string;
+  telefone: string;
+}
 
-  const btnRecusar = async() => {
-    try{
-      if(feedbackOrcamento.length === 0){
-        alert("Coloque uma descrição para o cliente.");
+// Função com uma Modal de confirmação para restaurar o documento arquivado
+export function ConfirmationRestoreDoc({ dd, cpf, nome, sobrenome, email, telefone}: ConfirmationRestoreDocProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  
+  //Botão para confirmar a ação
+  const btnRestaurar = async() => {
+    try {
+      // Verifica se o status do documento no DocumentData é "Arquivado\n(Arquivado pelo Escritório)"
+      if (dd.Status === "Arquivado pelo Escritório") {
+        alert("Seu trabalho não pode ser restaurando pois foi arquivado pelo escritório.");
+        setIsOpen(false); //Fecha a Modal
         return;
       }
-    } catch(error) {
-      alert("Erro ao verificar o preenchimento dos campos")
-    }
-  };
-
-  const btnAceitar = async() => {
-    try{
-      if(feedbackOrcamento.length === 0 || valorOrcamento.length === 0){
-        alert("Preencha todos os campos para prosseguir.");
+      if (dd.Status === "Recusado pelo Escritório") {
+        alert("Seu trabalho não pode ser restaurando pois foi recusado pelo escritório.");
+        setIsOpen(false); //Fecha a Modal
         return;
       }
-    } catch(error) {
-      alert("Erro ao verificar o preenchimento dos campos")
-    }
-  };
+    //Enviando para a coleção Orcamento
+    const OrcamentoRef = collection(db, "Orcamento");
+    await addDoc(OrcamentoRef, {
+      cpfAdvogado: cpf,
+      Nome: nome,
+      Sobrenome: sobrenome,
+      Email: email,
+      Telefone: telefone,
+      Titulo: dd.Titulo,
+      Descricao: dd.Descricao,
+      DataEntrega: dd.DataEntrega,
+      DataEnvio: dd.DataEnvio,
+      CaminhoArquivo: dd.CaminhoArquivo,
+      Status: "Aguardando Aprovação",
+    });
 
-  const btnFechar = () => {
-    setIsOpen(false); //Fecha a modal
+    //Excluindo o orçamento arquivado da coleção OrcamentosArquivados
+    const OrcamentosArquivadosDocRef = doc(db, "OrcamentosArquivados", dd.id);
+    await deleteDoc(OrcamentosArquivadosDocRef);
+    setIsOpen(false);         //Fecha a Modal
+    window.location.reload(); //Atualiza os orçamentos na tela
+    
+    } catch (error) {
+      console.log("Ação inesperada", error);
+    }
+  } 
+
+  //Botão para cancelar o arquivamento
+  const btnCancelar = () => {
+    setIsOpen(false); //Fecha a Modal
   }
 
-  return (
+
+  return(
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        <Button>Visualizar Documento</Button>
+      <DialogTrigger>
+        <Button variant="ghost" size="icon">
+          <RotateCw className="h-4 w-4" />
+        </Button>
       </DialogTrigger>
-
-      <DialogContent className="max-w-[90vw] w-[1500px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w[425px]">
         <DialogHeader>
-            <div className="flex items-center gap-3">
-              <Avatar className="h-9 w-9">
-                  <AvatarFallback>{documentData.Nome ? documentData.Nome.slice(0, 2) : ''}</AvatarFallback>
-              </Avatar>
-              <div className="flex-1">
-                  <div className="font-medium"> {documentData.Nome} {documentData.Sobrenome} </div>
-                  <div className="text-muted-foreground text-sm"> {documentData.Email}</div> 
-              </div>
-            </div>
-            <div className="prose">
-                <p className='font-bold'><br/> {documentData.Titulo}</p>
-                <p className='mt-5'>{documentData.Descricao}</p>
-                <p className="text-muted-foreground text-sm"><br/> Solicitado dia {documentData.DataEnvio}, com prazo de entrega em {documentData.DataEntrega}. </p>
-            </div> 
+          <DialogTitle className='text-2x1 font-bold text-center'> 
+            Restaurar Orçamento
+          </DialogTitle>
         </DialogHeader>
-        <div className="flex gap-4 h-[70vh]">
-          <iframe
-            src={`${documentData.CaminhoArquivo}#toolbar=0`}
-            className="w-1/2 h-full border rounded"
-          />
-          <div className="w-1/2 flex flex-col">
-
-            {/* Texto e botão Fechar são exibidos apenas quando o status NÃO é "Aprovado" */}
-            {documentData.Status !== "Aprovado" && (
-              <>
-                <p className='font-bold mb-10'>
-                  Após a verificação do escritório, visualize aqui o valor e a análise do orçamento solicitado.
-                </p>
-                <div className='text-muted-foreground text-sm w-full'>Status: {documentData.Status}</div>
-                <div className='mt-12'>
-                  <Button className="w-full" onClick={btnFechar}>Fechar</Button>
-                </div>
-              </>
-            )}  
-
-            {/* Exibir os botões Aceitar e Recusar apenas se o status for "Aprovado" */}
-            {documentData.Status === "Aprovado" && (
-              <div className="flex flex-col gap-4 h-full">
-                <div className='space-y-1 mb-2'>
-                    <p className='font-bold mb-1'>Resposta do Escritório</p>
-                    <div className='w-full text-muted-foreground text-sm'>{documentData.feedbackOrcamento}</div> 
-                </div>
-                <div className='space-y-1 mb-2'>
-                    <p className='font-bold mb-1'>Valor</p>
-                    <div className='text-muted-foreground text-sm w-full'>{documentData.valor} reais</div>
-                </div>
-                <div className='text-muted-foreground text-sm w-full'>Status: {documentData.Status}</div>
-
-                <div className="flex-grow"></div>
-
-              <div className="flex gap-2">
-                <Button className="w-full" variant="destructive" onClick={btnRecusar}>Recusar</Button>
-                <Button className="w-full" variant="default" onClick={btnAceitar}>Aceitar</Button>
-              </div>
-            </div>
-            )}
-          </div>      
+        <div className='mt-6 text-center'>
+          <p className='text-gray-500'>Deseja restaurar "{dd.Titulo}"?</p>
         </div>
-      </DialogContent> 
+        <div className='mt-6 flex flex-col sm:flex-row justify-center gap-4'>
+          <Button variant="default" onClick={btnRestaurar}>
+            Restaurar
+          </Button>
+          <Button variant="outline" onClick={btnCancelar}>
+            Cancelar
+          </Button>
+        </div>
+      </DialogContent>
     </Dialog>
   )
 }

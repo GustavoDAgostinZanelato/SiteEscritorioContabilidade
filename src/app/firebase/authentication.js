@@ -29,7 +29,7 @@ const registrarComEmailESenha = async (cpf, nome, sobrenome, email, senha, telef
         // Lança os dados para o banco na tabela "Advogado"
         await addDoc(collection(db, "Advogado"), {
             uid: user.uid,
-            authProvider: 'local',
+            // authProvider: 'local',
             cpf,
             email,
             nome,

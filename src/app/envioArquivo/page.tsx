@@ -23,6 +23,7 @@ export default function EnvioArquivo() {
     const [sobrenome, setSobrenome] = useState('');
     const [telefone, setTelefone] = useState('');
     const [email, setEmail] = useState('');
+    const [senha, setSenha] = useState('');
     //Informações do Documento
     const [cpf, setCpf] = useState('');
     const [titulo, setTitulo] = useState('');
@@ -50,6 +51,7 @@ export default function EnvioArquivo() {
                     setSobrenome(advogadoData.sobrenome);
                     setTelefone(advogadoData.telefone);
                     setEmail(advogadoData.email);
+                    setSenha(advogadoData.senha);
                 }
             }
         }
@@ -99,47 +101,35 @@ export default function EnvioArquivo() {
         }
     };
 
+        //Enviando para o Banco de Dados
+        const handleUpload = async () => {
 
-    //Enviando para o Banco de Dados
-    const handleUpload = async () => {
+            //Gerando uma URL para o arquivo que foi salvo no storage do Firebase
+            if (!arquivo) {
+                alert("Por favor, selecione um arquivo.");
+                return;
+            }
+            const storageRef = ref(storage, `Documentos/${arquivo.name}`);
+            try {
+                await uploadBytes(storageRef, arquivo);
+                const downloadURL = await getDownloadURL(storageRef);
+                
 
-        //Gerando uma URL para o arquivo que foi salvo no storage do Firebase
-        if (!arquivo) {
-            alert("Por favor, selecione um arquivo.");
-            return;
-        }
-        const storageRef = ref(storage, `Documentos/${arquivo.name}`);
-        try {
-            await uploadBytes(storageRef, arquivo);
-            const downloadURL = await getDownloadURL(storageRef);
-            
-            //Envia os dados para a coleção 'Orcamento'
-            const orcamentoCollectionRef = collection(db, "Orcamento");
-            await addDoc(orcamentoCollectionRef, {
-                Titulo: titulo,
-                Descricao: descricao,
-                DataEntrega: dataEscolhidaBr,
-                DataEnvio: dataAtual,
-                CaminhoArquivo: downloadURL,
-                cpfAdvogado: cpf,
-                Status: "Em análise",
-            });
-
-            //Envia os dados para a coleção 'OrcamentosEnviados'
-            const orcamentosEnviadosCollectionRef = collection(db, "OrcamentosEnviados");
-            await addDoc(orcamentosEnviadosCollectionRef, {
-                cpf: cpf,
-                Nome: nome,
-                Sobrenome: sobrenome,
-                Email: email,
-                Telefone: telefone,
-                Titulo: titulo,
-                Descricao: descricao,
-                DataEntrega: dataEscolhidaBr,
-                DataEnvio: dataAtual,
-                CaminhoArquivo: downloadURL,
-                Status: "Em análise",
-            });
+                //Envia os dados para a coleção 'OrcamentosEnviados'
+                const orcamentoCollectionRef = collection(db, "Orcamento");
+                await addDoc(orcamentoCollectionRef, {
+                    cpfAdvogado: cpf,
+                    Nome: nome,
+                    Sobrenome: sobrenome,
+                    Email: email,
+                    Telefone: telefone,
+                    Titulo: titulo,
+                    Descricao: descricao,
+                    DataEntrega: dataEscolhidaBr,
+                    DataEnvio: dataAtual,
+                    CaminhoArquivo: downloadURL,
+                    Status: "Aguardando Aprovação",
+                });
 
             alert("Orçamento solicitado com sucesso!");
             router.push(`/telaAdvogado?uid=${uid}`);

@@ -2,15 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useSearchParams } from 'next/navigation';
-import { Textarea } from "@/components/ui/textarea";
 import SvgComponentClaro from "@/components/ui/logoClaro";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Dialog,  DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { collection, query, where, getDocs, updateDoc, getFirestore, doc, getDoc, addDoc } from "firebase/firestore";
+import { Dialog,  DialogContent, DialogHeader, DialogTitle, DialogTrigger,} from "@/components/ui/dialog"
+import { collection, query, where, getDocs, deleteDoc, getFirestore, doc, getDoc, updateDoc, addDoc, DocumentData, writeBatch  } from "firebase/firestore";
 import { SquareCheckBig } from 'lucide-react';
 import { UsersRound } from 'lucide-react';
 import { RotateCw } from 'lucide-react';
@@ -32,6 +30,7 @@ export default function telaEmpresa() {
     const [nome, setNome] = useState('');
     const [sobrenome, setSobrenome] = useState('');
     const [email, setEmail] = useState('');
+    const [telefone, setTelefone] = useState('');
     const [cpf, setCpfEmpresa] = useState('');
     const primeiraLetra = nome.slice(0, 2);
     //Pegando os orçamentos no BD
@@ -40,10 +39,10 @@ export default function telaEmpresa() {
     // const [caminhoArquivo, setCaminhoArquivo] = useState<string>('');
     //Extras
     const [loading, setLoading] = useState(true); 
-    const router = useRouter();   
+    const router = useRouter(); 
 
 
-    interface DocumentData {
+  interface DocumentData {
       CaminhoArquivo: string;
       DataEntrega: string;
       DataEnvio: string;  
@@ -55,33 +54,31 @@ export default function telaEmpresa() {
       Telefone: string;
       Titulo: string;
       cpfAdvogado: string;
+      cpfEmpresa: string;
       id: string;
     };
-
-
     
+
     // Função para o botão de recarregar a página
     const handleRefresh = () => {
       window.location.reload();
     };
 
-
    //Navegadador entre as telas
     const NavegadorHome = () => {
       router.push(`/`);
-    }
+    };
     const NavegadorCadastrarFuncionario = () => {
       router.push(`/cadastrarFuncionario?uid=${uid}`);
-    }
-    const NavegadorTrabalhosArquivados = () => {
-      router.push(`/ArquivadosEmpresa?uid=${uid}`);
     };
-    
+    const NavegadorTelaEmpresa = () => {
+        router.push(`/telaEmpresa?uid=${uid}`);
+    }
   
     //Função para buscar os dados do documento PDF no Firestore
     const fetchDocumentData = async (docId: string) => { //Recebe o ID do documento como parâmetro
       try {
-        const docRef = doc(db, 'Orcamento', docId); //Localiza o documento com base no ID dele
+        const docRef = doc(db, 'OrcamentosArquivados', docId); //Localiza o documento com base no ID dele
         const docSnapshot = await getDoc(docRef);
         if (docSnapshot.exists()) {
           const data = docSnapshot.data() as DocumentData;
@@ -108,14 +105,14 @@ export default function telaEmpresa() {
                   setNome(empresaData.nome);
                   setSobrenome(empresaData.sobrenome);
                   setEmail(empresaData.email);
+                  setTelefone(empresaData.telefone);
                   setCpfEmpresa(empresaData.cpf);
                   console.log("Dados do Usuário:", querySnapshot.docs[0].data());
-                  
+
                   //Aproveitando para pegar os documentos do BD
-                  const orcamentoQuery = query(collection(db, 'Orcamento'), 
-                    where('Status', '!=', "Arquivado pelo Escritório" && "Recusado"));
-                  const orcamentoSnapshot = await getDocs(orcamentoQuery);
-                  const orcamentoList = orcamentoSnapshot.docs.map(doc => {
+                  const OrcamentosArquivadosQuery = query(collection(db, 'OrcamentosArquivados'), where("cpfEmpresa", "==", empresaData.cpf));
+                  const OrcamentosArquivadosSnapshot = await getDocs(OrcamentosArquivadosQuery);
+                  const orcamentoList = OrcamentosArquivadosSnapshot.docs.map(doc => {
                     const data = doc.data() as DocumentData; //Realizando a tipagem de orcamentoList com DocumentData
                     return {
                       ...data,
@@ -123,6 +120,7 @@ export default function telaEmpresa() {
                     };
                   });
                   setOrcamentos(orcamentoList); //Coloca os documentos em uma lista, que será posteriormente percorrida pelo map
+
               } else {
                 console.error("Dados não encontrados");
               }
@@ -149,17 +147,17 @@ export default function telaEmpresa() {
                            <div className="p-5"/>
                         </>
                       ) : (
-                          <>
-                            <button onClick={NavegadorHome} className='pl-5 pt-1'>
-                              <SvgComponentClaro />
-                            </button>
-                          </>
+                        <>
+                          <button onClick={NavegadorHome} className='pl-5 pt-1'>
+                            <SvgComponentClaro />
+                          </button>
+                        </>
                       )} 
                     </>
                 </header>
 
                 <nav className="flex flex-col gap-1 p-2">
-                    <Button variant="ghost" className="justify-start gap-2 px-3 py-2 rounded-md hover:bg-muted">
+                    <Button variant="ghost" className="justify-start gap-2 px-3 py-2 rounded-md hover:bg-muted" onClick={NavegadorTelaEmpresa}>
                         <House className="w-5 h-5" />
                         Página Inicial
                     </Button>
@@ -175,7 +173,7 @@ export default function telaEmpresa() {
                         <Layers3 className='h-5 w-5' />
                         Trabalhos em Processo
                     </Button>
-                    <Button variant="ghost" className="justify-start gap-2 px-3 py-2 rounded-md hover:bg-muted" onClick={NavegadorTrabalhosArquivados}>
+                    <Button variant="ghost" className="justify-start gap-2 px-3 py-2 rounded-md hover:bg-muted">
                         <Archive className="w-5 h-5" />
                         Trabalhos Recusados
                     </Button>
@@ -200,26 +198,29 @@ export default function telaEmpresa() {
                 <div className="grid md:grid-cols-[1fr_400px] gap-4 p-4 flex-1">
                     <div className=" rounded-md overflow-hidden flex-1">
                         <div className="border-b p-3 bg-background">
-                            <div className="font-medium">Seus trabalhos</div>
-                            <div className="text-muted-foreground text-sm"> Trabalhos pendentes: {orcamentos.length} </div>
+                            <div className="font-medium">Documentos Arquivados</div>
+                            <div className="text-muted-foreground text-sm"> Trabalhos arquivados: {orcamentos.length} </div>
                         </div>
 
                         <div className="divide-y">
-                            {orcamentos.map((Orcamento, index) => (
-                                <div className="flex items-center gap-3 p-3 hover:bg-[#efefef]" key={index} onClick={() => fetchDocumentData(Orcamento.id)}>
-                                    <div className='h-3 w-3 rounded-full bg-[#e6df30]'/>
+                            {orcamentos.map((orcamentosArquivados, index) => (
+                                <div className="flex items-center gap-3 p-3 hover:bg-[#efefef]" key={index} onClick={() => fetchDocumentData(orcamentosArquivados.id)}>
+                                    <div className='h-3 w-3 rounded-full bg-[#e63330]'/>
                                     <div className="flex items-center w-full p-3 hover:cursor-pointer ">
                                         <h1 className="cursor-pointer text-blue-500" >
                                           <div>
-                                            {Orcamento.Titulo}
+                                            {orcamentosArquivados.Titulo}
                                           </div>
                                           <div className='text-muted-foreground text-sm'>
-                                            Adv. {Orcamento.Nome} {Orcamento.Sobrenome}
+                                            Adv. {orcamentosArquivados.Nome} {orcamentosArquivados.Sobrenome}
                                           </div>
                                         </h1> 
                                         <div className="ml-auto flex items-center space-x-6">
-                                          <h1 className="text-muted-foreground text-sm">Status: {Orcamento.Status}</h1>
-                                          {/* <Confirmation dd={Orcamento} cpf={cpf} /> */}
+                                          <h1 className="text-muted-foreground text-sm">Status: {orcamentosArquivados.Status}</h1>
+
+                                          <ConfirmationRestoreDoc dd={orcamentosArquivados} />
+                                          <ConfirmationDeleteDoc dd={orcamentosArquivados} />
+
                                         </div>
                                     </div>
                                 </div>  
@@ -254,7 +255,7 @@ export default function telaEmpresa() {
                                     <div className="prose">
                                         <p><br/> {documentData.Descricao}</p>
                                         <p className="text-muted-foreground text-sm"><br/> Prazo de Entrega: {documentData.DataEntrega}</p><br/>
-                                        <VisualizadorPDF documentData={documentData} cpf={cpf}/>
+                                        <PDFViewer pdfUrl={documentData.CaminhoArquivo} />
                                     </div>  
                                 </>
 
@@ -287,247 +288,199 @@ export default function telaEmpresa() {
 
 
 
-
-
-
-
-//Sistema de modal para o usuário vizualizar o documento PDF
-interface DocumentData {
-  CaminhoArquivo: string;
-  DataEntrega: string;
-  DataEnvio: string;  
-  Descricao: string;
-  Email: string;
-  Nome: string;
-  Sobrenome: string;
-  Status: string;
-  Telefone: string;
-  Titulo: string;
-  cpfAdvogado: string;
-  id: string;
-}
 interface Property {
-  documentData: DocumentData;
-  cpf: string;
+  pdfUrl: string
 }
 
-export function VisualizadorPDF({ documentData, cpf }: Property) {
-  const [feedbackOrcamento, setFeedbackOrcamento] = useState('');
-  const [valorOrcamento, setValorOrcamento] = useState('');
-  const [isOpen, setIsOpen] = useState(false);
-
-
-  //Lógica para o botao de Recusar Orçamento
-  const btnRecusar = async () => {
-    try {
-      if (feedbackOrcamento.length === 0) {
-        alert("Coloque uma descrição para o cliente.");
-        return;
-      }
-      const orcamentoQuery = query(collection(db, 'Orcamento')); // Busca a coleção 'Orcamento'
-      const querySnapshot = await getDocs(orcamentoQuery);
-      querySnapshot.forEach(async (docSnapshot) => {
-        const id = docSnapshot.id;  // Pega o ID diretamente do Firestore
-        const docRef = doc(db, 'Orcamento', id);
-        await updateDoc(docRef, {
-          Status: 'Recusado',
-          Valor: 'R$ 0,00',
-          FeedbackOrcamento: feedbackOrcamento,
-        });
-        setIsOpen(false);
-
-
-        const OrcamentosArquivadosCollectionRef = collection(db, "OrcamentosArquivados");
-        await addDoc(OrcamentosArquivadosCollectionRef, {
-          cpfAdvogado: documentData.cpfAdvogado,
-          cpfEmpresa: cpf,
-          Nome: documentData.Nome,
-          Sobrenome: documentData.Sobrenome,
-          Email: documentData.Email,  
-          Telefone: documentData.Telefone,
-          Titulo: documentData.Titulo,
-          Descricao: documentData.Descricao,
-          DataEntrega: documentData.DataEntrega,
-          DataEnvio: documentData.DataEnvio,
-          CaminhoArquivo: documentData.CaminhoArquivo,
-          Status: "Recusado",
-          Valor: 'R$ 0,00',
-          FeedbackOrcamento: feedbackOrcamento,
-        });
-
-        //Atualizando o Status do orcamento para o Advogado
-        const OrcamentoDocRef = doc(db, "Orcamento", documentData.id);
-        await updateDoc(OrcamentoDocRef, {
-          Status: "Trabalho Recusado"
-        });
-        // setIsOpen(false);         //Fecha a modal
-        window.location.reload(); //Atualiza os orçamentos na tela
-        });
-    } catch (error) {
-      console.log("Erro ao verificar o preenchimento dos campos" + error);
-    }
-  };
-
-
-  //Lógica para o botao de Aprovar Orçamento
-  const btnAprovar = async () => {
-    try {
-      if (feedbackOrcamento.length === 0 || valorOrcamento.length === 0) {
-        alert("Preencha todos os campos para prosseguir.");
-        return;
-      }
-      
-
-      //O valor e feedback estão sendo adicionados em todos os documentos 
-      const orcamentoQuery = query(collection(db, 'Orcamento')); // Busca a coleção 'Orcamento'
-      const querySnapshot = await getDocs(orcamentoQuery);
-  
-      querySnapshot.forEach(async (docSnapshot) => {
-        const id = docSnapshot.id;  // Pega o ID diretamente do Firestore
-        const docRef = doc(db, 'Orcamento', id);
-        await updateDoc(docRef, {
-          Status: 'Aprovado',
-          valor: valorOrcamento,
-          feedbackOrcamento: feedbackOrcamento,
-        });
-        setIsOpen(false);
-      });
-    } catch (error) {
-      console.error('Erro ao aprovar o orçamento:', error);
-    }
-  };
-
-
+export function PDFViewer({ pdfUrl }: Property) {
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog>
       <DialogTrigger asChild>
-        <Button>Visualizar e Aprovar Orçamento</Button>
+        <Button>Visualizar PDF</Button>
       </DialogTrigger>
 
-      <DialogContent className="max-w-[90vw] w-[1500px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-7xl max-h-[90vh]">
         <DialogHeader>
-            <div className="flex items-center gap-3">
-              <Avatar className="h-9 w-9">
-                  <AvatarFallback>{documentData.Nome ? documentData.Nome.slice(0, 2) : ''}</AvatarFallback>
-              </Avatar>
-              <div className="flex-1">
-                  <div className="font-medium"> {documentData.Nome} {documentData.Sobrenome} </div>
-                  <div className="text-muted-foreground text-sm"> {documentData.Email}</div> 
-              </div>
-            </div>
-            <div className="prose">
-                <p className='font-bold'><br/> {documentData.Titulo}</p>
-                <p className='mt-5'>{documentData.Descricao}</p>
-                <p className="text-muted-foreground text-sm"><br/> Solicitado dia {documentData.DataEnvio}, com prazo de entrega em {documentData.DataEntrega}. </p>
-            </div> 
+          <DialogTitle>Visualizador de PDF</DialogTitle>
         </DialogHeader>
-        <div className="flex gap-4 h-[70vh]">
-          <iframe
-            src={`${documentData.CaminhoArquivo}#toolbar=0`}
-            className="w-1/2 h-full border rounded"
-          />
-          <div className="w-1/2 flex flex-col">
-            <Label htmlFor="register-mensagem">
-              Análise do Orçamento Solicitado
-            </Label>
-            <Textarea
-              id="feedbackOrcamento"
-              placeholder="Encaminhe uma resposta ao cliente sobre o arquivo enviado"
-              className="flex-grow resize-none mb-4 mt-3"
-              onChange={(e) => setFeedbackOrcamento(e.target.value)}
-              value={feedbackOrcamento}
-              required
-            />
-            <div className="grid gap-4 mb-4">
-                <Label htmlFor="register-value">Valor do Orçamento</Label>
-                <Input
-                  id="register-value"
-                  type="text"
-                  placeholder="R$ 0,00"
-                  onChange={(e) => setValorOrcamento(e.target.value)}
-                  value={valorOrcamento}
-                />
-                <p className="text-muted-foreground text-sm">O valor do orçamento será preenchido automaticamente como zero caso o trabalho seja recusado.</p>
-            </div>
-            <div className="flex justify-end space-x-2">
-              <Button variant="destructive" className="w-full" onClick={btnRecusar}>Recusar</Button>
-              <Button variant="default" className="w-full" onClick={btnAprovar}>Aprovar</Button>
-            </div>
+
+        <div className='flex-auto'>
+          <div className=" h-[calc(90vh-100px)]">
+            <iframe
+              src={`${pdfUrl}#toolbar=0`}
+              width="70%"
+              height="100%"
+              style={{ border: 'none' }}
+            >
+            </iframe> 
           </div>
-        </div>
-      </DialogContent> 
-    </Dialog>
-  );
-}
-
-
-
-// Função com uma Modal de confirmação para arquivar os orçamentos
-interface ConfirmationProps {
-  dd: DocumentData;
-  cpf: string;
-}
-
-export function Confirmation({ dd, cpf }: ConfirmationProps) {
-  const [isOpen, setIsOpen] = useState(false)
-  
-  //Botão para confirmar o arquivamento
-  const btnArquivar = async() => {
-    //Enviando para a coleção OrcamentosArquivados
-    const OrcamentosArquivadosCollectionRef = collection(db, "OrcamentosArquivados");
-    await addDoc(OrcamentosArquivadosCollectionRef, {
-      cpfAdvogado: dd.cpfAdvogado,
-      cpfEmpresa: cpf,
-      Nome: dd.Nome,
-      Sobrenome: dd.Sobrenome,
-      Email: dd.Email,  
-      Telefone: dd.Telefone,
-      Titulo: dd.Titulo,
-      Descricao: dd.Descricao,
-      DataEntrega: dd.DataEntrega,
-      DataEnvio: dd.DataEnvio,
-      CaminhoArquivo: dd.CaminhoArquivo,
-      Status: "Arquivado"
-    });
-
-    //Atualizando o Status do orcamento para o Advogado
-    const OrcamentoDocRef = doc(db, "Orcamento", dd.id);
-    await updateDoc(OrcamentoDocRef, {
-      Status: "Arquivado pelo Escritório"
-    });
-    setIsOpen(false);         //Fecha a modal
-    window.location.reload(); //Atualiza os orçamentos na tela
-  } 
-  //Botão para cancelar o arquivamento
-  const btnCancelar = () => {
-    setIsOpen(false); //Fecha a modal
-  }
-
-  return(
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger>
-        <Button variant="ghost" size="icon">
-          <Trash2 className="h-4 w-4" />
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w[425px]">
-        <DialogHeader>
-          <DialogTitle className='text-2x1 font-bold text-center'> 
-            Arquivar Orçamento
-          </DialogTitle>
-        </DialogHeader>
-        <div className='mt-6 text-center'>
-          <p className='text-gray-500'>Tem certeza que deseja arquivar {dd.Titulo}?</p>
-        </div>
-        <div className='mt-6 flex flex-col sm:flex-row justify-center gap-4'>
-          <Button variant="destructive" onClick={btnArquivar}>
-            Arquivar
-          </Button>
-          <Button variant="outline" onClick={btnCancelar}>
-            Cancelar
-          </Button>
         </div>
       </DialogContent>
     </Dialog>
   )
-};
+}
+
+
+interface ConfirmationDeleteDocProps {
+    dd: DocumentData;
+  }
+  
+  // Função com uma Modal de confirmação para deletar os orçamentos do Advogado
+  export function ConfirmationDeleteDoc({ dd }: ConfirmationDeleteDocProps) {
+    const [isOpen, setIsOpen] = useState(false);
+    
+    //Botão para confirmar a exclusão
+    const btnDeletar = async() => {
+      //Excluindo o orçamento da coleção "OrcamentosArquivados"
+      const OrcamentosDocRef = doc(db, "OrcamentosArquivados", dd.id);
+      await deleteDoc(OrcamentosDocRef);
+      setIsOpen(false);         //Fecha a Modal
+      window.location.reload(); //Atualiza os orçamentos na tela
+    } 
+    //Botão para cancelar a exclusão
+    const btnCancelar = () => {
+      setIsOpen(false); //Fecha a Modal
+    }
+  
+    return(
+      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <DialogTrigger>
+          <Button variant="ghost" size="icon">
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </DialogTrigger>
+        <DialogContent className="sm:max-w[425px]">
+          <DialogHeader>
+            <DialogTitle className='text-2x1 font-bold text-center'> 
+              Deletar Orçamento
+            </DialogTitle>
+          </DialogHeader>
+          <div className='mt-6 text-center'>
+            <p className='text-gray-500'>O arquivo "{dd.Titulo}" será deletado permanentemente. Deseja prosseguir?</p>
+          </div>
+          <div className='mt-6 flex flex-col sm:flex-row justify-center gap-4'>
+            <Button variant="destructive" onClick={btnDeletar}>
+              Deletar
+            </Button>
+            <Button variant="outline" onClick={btnCancelar}>
+              Cancelar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    )
+  }
+  
+  
+  interface ConfirmationRestoreDocProps {
+    dd: DocumentData;
+  }
+  
+  // Função com uma Modal de confirmação para restaurar o documento arquivado
+  export function ConfirmationRestoreDoc({ dd }: ConfirmationRestoreDocProps) {
+    const [isOpen, setIsOpen] = useState(false);
+    
+    const btnRestaurar = async () => {
+    try {
+        // Verifica se existem documentos duplicados na coleção OrcamentosArquivados com o mesmo Titulo e Descricao
+        const orcamentosDuplicadosQuery = query(
+          collection(db, "OrcamentosArquivados"),
+          where("Titulo", "==", dd.Titulo),
+          where("Descricao", "==", dd.Descricao)
+        );
+        const duplicadosSnapshot = await getDocs(orcamentosDuplicadosQuery);
+
+        // Se mais de um documento for encontrado com o mesmo Titulo e Descricao, exibe o alert
+        if (duplicadosSnapshot.size > 1) {
+        // alert("Existem documentos duplicados com o mesmo Título e Descrição.");
+          
+          const OrcamentoRef = collection(db, "Orcamento");
+          await addDoc(OrcamentoRef, {
+            cpfAdvogado: dd.cpfAdvogado,
+            Nome: dd.Nome,
+            Sobrenome: dd.Sobrenome,
+            Email: dd.Email,  
+            Telefone: dd.Telefone,
+            Titulo: dd.Titulo,
+            Descricao: dd.Descricao,
+            DataEntrega: dd.DataEntrega,
+            DataEnvio: dd.DataEnvio,
+            CaminhoArquivo: dd.CaminhoArquivo,
+            Status: "Aguardando Aprovação",
+          });
+          
+          // Deleta todos os documentos duplicados
+          const batch = writeBatch(db); // Inicia um batch para realizar múltiplas operações de escrita
+          duplicadosSnapshot.forEach((doc) => {
+            batch.delete(doc.ref); // Adiciona cada documento duplicado para ser deletado
+          });
+          await batch.commit(); // Executa a operação de batch para deletar os documentos duplicados
+
+          setIsOpen(false);         // Fecha a Modal
+          window.location.reload(); // Atualiza os orçamentos na tela 
+          return;
+        }
+
+
+        // Buscar na coleção "Orcamento" onde a descrição é igual à do documento arquivado
+        const orcamentoQuery = query(
+          collection(db, "Orcamento"),
+          where("Descricao", "==", dd.Descricao) // Usando dd.Descricao para comparar diretamente
+        );
+        
+        const querySnapshot = await getDocs(orcamentoQuery);
+        
+        // Atualizar o campo "Status" para cada documento encontrado
+        querySnapshot.forEach(async (docSnap) => {
+          const OrcamentoDocRef = doc(db, "Orcamento", docSnap.id);
+          await updateDoc(OrcamentoDocRef, {
+            Status: "Aguardando Aprovação"
+          });
+        });
+
+        // Excluindo o orçamento arquivado da coleção OrcamentosArquivados
+        const OrcamentosArquivadosDocRef = doc(db, "OrcamentosArquivados", dd.id);
+        await deleteDoc(OrcamentosArquivadosDocRef);
+
+        //Finalizando o processo
+        setIsOpen(false);         // Fecha a Modal
+        window.location.reload(); // Atualiza os orçamentos na tela
+      } catch (error) {
+      console.error("Erro ao restaurar o documento:", error);
+      }
+    } 
+  
+    //Botão para cancelar o arquivamento
+    const btnCancelar = () => {
+      setIsOpen(false); //Fecha a Modal
+    }
+  
+    return(
+      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <DialogTrigger>
+          <Button variant="ghost" size="icon">
+            <RotateCw className="h-4 w-4" />
+          </Button>
+        </DialogTrigger>
+        <DialogContent className="sm:max-w[425px]">
+          <DialogHeader>
+            <DialogTitle className='text-2x1 font-bold text-center'> 
+              Restaurar Orçamento
+            </DialogTitle>
+          </DialogHeader>
+          <div className='mt-6 text-center'>
+            <p className='text-gray-500'>Deseja restaurar "{dd.Titulo}"?</p>
+          </div>
+          <div className='mt-6 flex flex-col sm:flex-row justify-center gap-4'>
+            <Button variant="default" onClick={btnRestaurar}>
+              Restaurar
+            </Button>
+            <Button variant="outline" onClick={btnCancelar}>
+              Cancelar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    )
+  }
+  
