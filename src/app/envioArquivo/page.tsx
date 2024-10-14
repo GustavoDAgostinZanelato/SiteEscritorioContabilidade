@@ -104,11 +104,17 @@ export default function EnvioArquivo() {
         //Enviando para o Banco de Dados
         const handleUpload = async () => {
 
-            //Gerando uma URL para o arquivo que foi salvo no storage do Firebase
+            // Verificando se os campos obrigatórios foram preenchidos
+            if (!titulo || !descricao || !data || !arquivo) {
+                alert("Preencha todos os campos para proseguir.");
+                return;
+            }
             if (!arquivo) {
                 alert("Por favor, selecione um arquivo.");
                 return;
             }
+           
+            //Gerando uma URL para o arquivo que foi salvo no storage do Firebase
             const storageRef = ref(storage, `Documentos/${arquivo.name}`);
             try {
                 await uploadBytes(storageRef, arquivo);

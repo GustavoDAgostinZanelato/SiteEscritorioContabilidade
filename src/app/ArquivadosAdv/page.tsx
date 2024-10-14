@@ -17,6 +17,11 @@ import { Trash2 } from 'lucide-react';
 import { House } from 'lucide-react';
 import { Send } from 'lucide-react';
 import { app } from '../firebase/firebase';
+import SideBarLayout from '@/components/SideBarLayout';
+import { SearchBar } from '@/components/SearchBar';
+import { WorkList } from '@/components/WorkList';
+import { WorkDetails } from '@/components/WorkDetails';
+
 
 
 const db = getFirestore(app);
@@ -35,10 +40,12 @@ export default function ArquivadosAdv() {
     const primeiraLetra = nome.slice(0, 2);
     //Pegando os orçamentos no BD
     const [orcamentos, setOrcamentos] = useState<any[]>([]);
-    const [documentData, setDocumentData] = useState<DocumentData | null>(null);
+    const [documentData, setDocumentData] = useState<DocumentDataEncapsulamento | null>(null);
+    // const [documentData, setDocumentData] = useState<DocumentData | null>(null);
     //Extras
     const router = useRouter(); 
     const [loading, setLoading] = useState(true); 
+    
 
 
     interface DocumentData {
@@ -54,22 +61,32 @@ export default function ArquivadosAdv() {
       Titulo: string;
       cpf: string;
       id: string;
-    };
+    }
+    type DocumentDataEncapsulamento =  {
+      data: DocumentData,
+      docId: string,
+    }
     
     // Função para recarregar a página
     const handleRefresh = () => {
         window.location.reload();
     };
 
-    //Redireciona para a tela 
+    //Navegadador entre as telas
     const NavegadorHome = () => {
       router.push(`/`);
     };
-    const NavegadorTelaAdvogado = () => {
+    const NavegadorPaginaInicial = () => {
       router.push(`/telaAdvogado?uid=${uid}`);
     };
     const NavegadorEnvioArquivo  = () => {
       router.push(`/envioArquivo?uid=${uid}`);
+    };
+    const NavegadorTrabalhosArquivados = () => {
+      router.push(`/ArquivadosAdv?uid=${uid}`);
+    }
+    const NavegadorCadastrarFuncionario = () => {
+      router.push(`/cadastrarFuncionario?uid=${uid}`);
     };
 
 
@@ -80,7 +97,10 @@ export default function ArquivadosAdv() {
         const docSnapshot = await getDoc(docRef);
         if (docSnapshot.exists()) {
           const data = docSnapshot.data() as DocumentData;
-          setDocumentData(data);
+          setDocumentData({
+            data: data,
+            docId: docId,
+          });
         } else {
           console.log('Documento não encontrado');
         }
@@ -112,7 +132,7 @@ export default function ArquivadosAdv() {
                     const OrcamentosArquivadosQuery = query(collection(db, 'OrcamentosArquivados'), 
                     where('cpfAdvogado', '==', advogadoData.cpf), 
                     where("cpfEmpresa", "==", "null"),
-                    where('Status', '==', "Arquivado" && "Recusado pelo Escritório")
+                    // where('Status', '==', "Arquivado")
                   );
                     const OrcamentosArquivadosSnapshot = await getDocs(OrcamentosArquivadosQuery); //orcamentoSnapshot espera até todos os documentos serem buscados
                     const orcamentoList = OrcamentosArquivadosSnapshot.docs.map(doc => {
@@ -142,137 +162,45 @@ export default function ArquivadosAdv() {
     return (
       <>
         <div className="grid md:grid-cols-[260px_1fr] min-h-screen w-full">
-            <div className="flex flex-col bg-background text-foreground border-r">
-                <header className="flex items-center p-4 ">
-                    <>
-                    {loading ? (
-                      <div className="p-5"/>
-                    ) : (
-                      <>
-                        <button onClick={NavegadorHome} className='pl-5 pt-1'>
-                          <SvgComponentClaro />
-                        </button>
-                      </>
-                    )}
-                    </>
-                </header>
-                <nav className="flex flex-col gap-1 p-2">
-                    <Button variant="ghost" className="justify-start gap-2 px-3 py-2 rounded-md hover:bg-muted" onClick={NavegadorTelaAdvogado} >
-                        <House className="w-5 h-5" />
-                        Página Inicial
-                    </Button>
-                    <Button variant="ghost" className="justify-start gap-2 px-3 py-2 rounded-md hover:bg-muted" onClick={NavegadorEnvioArquivo}>
-                        <Send className="w-5 h-5" />
-                        Solicitar um Orçamento
-                    </Button>
-                    <Button variant="ghost" className="justify-start gap-2 px-3 py-2 rounded-md hover:bg-muted">
-                        <SquareCheckBig className="w-5 h-5" />
-                        Trabalhos Concluídos
-                    </Button>
-                    <Button variant="ghost" className="justify-start gap-2 px-3 py-2 rounded-md hover:bg-muted">
-                        <Layers3 className='h-5 w-5' />
-                        Trabalhos em Processo
-                    </Button>
-                    <Button variant="ghost" className="justify-start gap-2 px-3 py-2 rounded-md hover:bg-muted" >
-                        <Archive className="w-5 h-5" />
-                        Trabalhos Arquivados 
-                    </Button>
-                </nav>
-            </div>
+          <SideBarLayout 
+              onRefresh={handleRefresh}
+              onNavigateHome={NavegadorHome}
+              onPaginaInicial={NavegadorPaginaInicial}
+              onCadastrarFuncionario={NavegadorCadastrarFuncionario}
+              onEnvioArquivo={NavegadorEnvioArquivo}
+              onTrabalhosArquivados={NavegadorTrabalhosArquivados}
+              primeiraLetra={primeiraLetra}
+              loading={loading}
+              orcamentos={orcamentos}
+              DescricaoBtn1='Solicitar Orçamento'
+              DescricaoBtn2='Trabahos Arquivados'
+              cadastrarFuncionarioIcon={<Send className="w-5 h-5" />}
+          />
+          
 
-            <div className="flex flex-col">
-                <header className="flex items-center gap-2 p-4 border-b">
-                    <div className="flex-1">
-                        <Input type="search" placeholder="Pesquisar trabalhos" className="rounded-50  " />
-                    </div>
-                    <Button variant="ghost" size="icon" onClick={handleRefresh}>
-                        <RotateCw className="w-5 h-5" />
-                    </Button>
-                    <Avatar className="h-9 w-9">
-                        <AvatarFallback> {primeiraLetra} </AvatarFallback>
-                    </Avatar>
-                </header>
-
-
-                {/* Aba Seus Envios */}
-                <div className="grid md:grid-cols-[1fr_400px] gap-4 p-4 flex-1">
-                    <div className=" rounded-md overflow-hidden flex-1">
-                        <div className="border-b p-3 bg-background">
-                            <div className="font-medium">Documentos Arquivados</div>
-                            <div className="text-muted-foreground text-sm"> Trabalhos arquivados: {orcamentos.length} </div>
-                        </div>
-
-                        <div className="divide-y">
-                            {orcamentos.map((orcamentosArquivados, index) => (
-                                <div className="flex items-center gap-3 p-3 hover:bg-[#efefef]" key={index} onClick={() => fetchDocumentData(orcamentosArquivados.id)}>
-                                    <div className='h-3 w-3 rounded-full bg-[#e63330]'/>
-                                    <div className="flex items-center w-full p-3 hover:cursor-pointer ">
-                                      <h1 className="cursor-pointer text-blue-500" >
-                                          {orcamentosArquivados.Titulo}
-                                      </h1>
-                                      <div className="ml-auto flex items-center space-x-6">
-                                      <h1 className="text-muted-foreground text-sm">
-                                        Status: {typeof orcamentosArquivados.Status === 'string' && orcamentosArquivados.Status.split('\n').map((line: string, index: number) => (
-                                          <span key={index}>
-                                            {line}
-                                            <br />
-                                          </span>
-                                        ))}
-                                      </h1>
-
-                                        <ConfirmationRestoreDoc dd={orcamentosArquivados} cpf={cpf} nome={nome} sobrenome={sobrenome} email={email} telefone={telefone} />
-                                        <ConfirmationDeleteDoc dd={orcamentosArquivados} />
-
-                                      </div>
-                                    </div>
-                                </div>  
-                            ))}
-                        </div>
-                    </div>
-
-
-                    {/* Aba Datalhes do Envio */}
-                    <div className="bg-muted rounded-md overflow-hidden flex-1">
-                        <div className="border-b p-3 bg-background">
-                            <div className="font-medium pb-5">Detalhes do envio</div>
-                        </div>
-                          <>
-                              {loading ? (
-                                <br></br>
-                              ) : (
-                                <div className="p-4 flex flex-col gap-4">
-                                    <div className="flex items-center gap-3">
-                                        <Avatar className="h-9 w-9">
-                                            <AvatarFallback>{primeiraLetra}</AvatarFallback>
-                                        </Avatar>
-                                        <div className="flex-1">
-                                            <div className="font-medium"> {nome} {sobrenome} </div>
-                                            <div className="text-muted-foreground text-sm"> {email} </div> 
-                                        </div>
-                                        {documentData ? (
-                                          <div className="text-muted-foreground text-sm">{documentData.DataEnvio}</div>
-                                        ) : (
-                                          <h1></h1>
-                                        )}
-                                    </div>
-                                    
-                                    <div className="prose">
-                                        {documentData ? (
-                                            <>
-                                                <p><br/> {documentData.Descricao}</p>
-                                                <p className="text-muted-foreground text-sm"><br/> Prazo de Entrega: {documentData.DataEntrega}</p><br/>
-                                                <a href={documentData.CaminhoArquivo} target="_blank" rel="noopener noreferrer">
-                                                  <Button>Abrir PDF</Button>
-                                                </a>
-                                            </>
-                                        ) : (
-                                            <h1 className="text-muted-foreground text-sm"><br/>Clique no título do envio para ver mais detalhes</h1>
-                                        )}
-                                    </div>
-                              </div>
-                            )}
-                        </>
-                    </div>
+          <div className="flex flex-col">
+            <SearchBar handleRefresh={handleRefresh} primeiraLetra={primeiraLetra} />
+              <div className="grid md:grid-cols-[1fr_400px] gap-4 p-4 flex-1">
+                {/* Aba Trabalhos Recusados */}
+                <WorkList 
+                  orcamentos={orcamentos} 
+                  fetchDocumentData={fetchDocumentData} 
+                  titulo1={"Trabalhos Recusados"} 
+                  titulo2={"Total"} 
+                  source="trabalhosArquivados"
+                />
+                {/* Aba Datalhes do Envio */}
+                <WorkDetails
+                  documentData={documentData}
+                  loading={loading}
+                  cpf={cpf}
+                  primeiraLetra={primeiraLetra}
+                  nome={nome}
+                  sobrenome={sobrenome}
+                  email={email}
+                  id={documentData ? documentData.docId : ''}
+                  source="arquivadosEmpresa"
+                />
                 </div>
             </div>
         </div>
