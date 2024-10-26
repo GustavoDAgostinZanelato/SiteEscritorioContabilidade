@@ -1,14 +1,15 @@
 "use client";
 
+import { UsersRound } from 'lucide-react';
 import { app } from '../firebase/firebase'; 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { WorkList } from '@/components/WorkList';
 import { useSearchParams } from 'next/navigation';
 import { SearchBar } from '@/components/SearchBar';
 import { WorkDetails } from '@/components/WorkDetails';
 import SideBarLayout from '@/components/SideBarLayout';
 import { collection, query, where, getDocs, getFirestore, doc, getDoc } from "firebase/firestore";
+import Navigation from '@/components/navigation/navigation';
 
 const db = getFirestore(app);
 
@@ -16,6 +17,9 @@ export default function telaEmpresa() {
     //Puxando o ID do usuário pela URL
     const searchParams = useSearchParams();
     const uid = searchParams.get('uid');
+    // Inicializando o componente de navegação
+    const { NavegadorHome, RotasEmpresa } = Navigation({ uid });
+    const { NavegadorPaginaInicial, NavegadorCadastrarFuncionario, NavegadorTrabalhosConcluidos, NavegadorTrabalhosEmProcesso, NavegadorArquivados } = RotasEmpresa();
     //Informações do usuário conectado
     const [nome, setNome] = useState('');
     const [sobrenome, setSobrenome] = useState('');
@@ -28,7 +32,6 @@ export default function telaEmpresa() {
     const [documentData, setDocumentData] = useState<DocumentDataEncapsulamento | null>(null);
     //Extras
     const [loading, setLoading] = useState(true); 
-    const router = useRouter(); 
 
   interface DocumentData {
       CaminhoArquivo: string;
@@ -53,23 +56,6 @@ export default function telaEmpresa() {
     // Função para o botão de recarregar a página
     const handleRefresh = () => {
       window.location.reload();
-    };
-
-   //Navegadador entre as telas
-    const NavegadorHome = () => {
-      router.push(`/`);
-    };
-    const NavegadorPaginaInicial = () => {
-      router.push(`/telaEmpresa?uid=${uid}`);
-    }
-    const NavegadorCadastrarFuncionario = () => {
-      router.push(`/cadastrarFuncionario?uid=${uid}`);
-    };
-    const NavegadorTrabalhosArquivados = () => {
-      router.push(`/ArquivadosEmpresa?uid=${uid}`);
-    }
-    const NavegadorEnvioArquivo  = () => {
-      router.push(`/envioArquivo?uid=${uid}`);
     };
     
     //Função para buscar os dados do documento PDF no Firestore
@@ -140,14 +126,21 @@ export default function telaEmpresa() {
       <div className="grid md:grid-cols-[260px_1fr] min-h-screen w-full">
         <SideBarLayout 
             onRefresh={handleRefresh}
-            onNavigateHome={NavegadorHome}
+            primeiraLetra={primeiraLetra}
+            orcamentos={orcamentos}
+            loading={loading}
+            DescricaoBtn1="Cadastrar Funcionário"
+            DescricaoBtn2="Trabalhos Recusados"
+            source='empresa'
+            cadastrarFuncionarioIcon={<UsersRound className="h-5 w-5" />}
+            onHome={NavegadorHome}
             onPaginaInicial={NavegadorPaginaInicial}
             onCadastrarFuncionario={NavegadorCadastrarFuncionario}
-            onTrabalhosArquivados={NavegadorTrabalhosArquivados}
-            onEnvioArquivo={NavegadorEnvioArquivo}
-            primeiraLetra={primeiraLetra}
-            loading={loading}
-            orcamentos={orcamentos}
+            onTrabalhosConcluidos={NavegadorTrabalhosConcluidos}
+            onTrabalhosEmProcesso={NavegadorTrabalhosEmProcesso}
+            onArquivados={NavegadorArquivados}
+
+            onEnvioArquivo={NavegadorHome} //rota propria do advogado e que nao será usada aqui, por isso mandando qualquer caminho
         />
         <div className="flex flex-col">
           <SearchBar handleRefresh={handleRefresh} primeiraLetra={primeiraLetra} />
@@ -158,6 +151,7 @@ export default function telaEmpresa() {
               fetchDocumentData={fetchDocumentData} 
               titulo1={"Trabalhos Recusados"} 
               titulo2={"Total"} 
+              id={documentData ? documentData.docId : ''}
               source="trabalhosArquivados"
             />
             {/* Aba Datalhes do Envio */}
@@ -170,6 +164,7 @@ export default function telaEmpresa() {
               sobrenome={sobrenome}
               email={email}
               id={documentData ? documentData.docId : ''}
+              resposta={"Resposta do Cliente"}
               source="arquivadosEmpresa"
             />
           </div>

@@ -55,11 +55,11 @@ export default function telaEmpresa() {
     const handleRefresh = () => {
       window.location.reload();
     };
-
+  
     //Função para buscar os dados do documento PDF no Firestore
     const fetchDocumentData = async (docId: string) => { //Recebe o ID do documento como parâmetro
       try {
-        const docRef = doc(db, 'Orcamento', docId); //Localiza o documento com base no ID dele
+        const docRef = doc(db, 'OrcamentosProcesso', docId); //Localiza o documento com base no ID dele
         const docSnapshot = await getDoc(docRef);
         if (docSnapshot.exists()) {
           const data = docSnapshot.data() as DocumentData;
@@ -93,8 +93,7 @@ export default function telaEmpresa() {
                   console.log("Dados do Usuário:", querySnapshot.docs[0].data());
                   
                   //Aproveitando para pegar os documentos do BD
-                  const orcamentoQuery = query(collection(db, 'Orcamento'),
-                  where("Status", "!=", "Recusado"));
+                  const orcamentoQuery = query(collection(db, 'OrcamentosProcesso'))
                   const orcamentoSnapshot = await getDocs(orcamentoQuery);
                   const orcamentoList = orcamentoSnapshot.docs.map(doc => {
                     const data = doc.data() as DocumentData; //Realizando a tipagem de orcamentoList com DocumentData
@@ -146,10 +145,10 @@ export default function telaEmpresa() {
                 <WorkList 
                   orcamentos={orcamentos} 
                   fetchDocumentData={fetchDocumentData} 
-                  titulo1={"Trabalhos Recebidos"} 
+                  titulo1={"Trabalhos em Processo"} 
                   titulo2={"Total"} 
                   id={documentData ? documentData.docId : ''}
-                  source="empresa"
+                  source="trabalhosProcessoAdm"
                 />
                 {/* Aba Datalhes do Envio */}
                 <WorkDetails
@@ -162,7 +161,7 @@ export default function telaEmpresa() {
                   email={email}
                   resposta={"Resposta do Cliente"}
                   id={documentData ? documentData.docId : ''}
-                  source="empresa"
+                  source="trabalhosProcesso"
                 />
               </div>
           </div>

@@ -21,9 +21,8 @@ export default function Login() {
   const [uid, setUid] = useState('');
   const router = useRouter(); 
 
-
-  //Pega o ID do advogado do BD
   async function fetchId() {
+    //Pega o ID do advogado do BD
     if (email) {
       const q = query(collection(db, "Advogado"), where("email", "==", email));
       const querySnapshot = await getDocs(q);
@@ -31,10 +30,9 @@ export default function Login() {
           const advogadoDoc = querySnapshot.docs[0];
           const advogadoData = advogadoDoc.data();
           setUid(advogadoData.uid); 
-          console.log(uid)
       }
     }
-
+    //Pega o ID da empresa do BD
     if (email) {
       const q = query(collection(db, "Empresa"), where("email", "==", email));
       const querySnapshot = await getDocs(q);
@@ -42,7 +40,16 @@ export default function Login() {
           const empresaDoc = querySnapshot.docs[0];
           const empresaData = empresaDoc.data();
           setUid(empresaData.uid); 
-          console.log(uid)
+      }
+    }
+    //Pega o ID do funcionario do BD
+    if (email) {
+      const q = query(collection(db, "Funcionarios"), where("email", "==", email));
+      const querySnapshot = await getDocs(q);
+      if (!querySnapshot.empty) {
+          const empresaDoc = querySnapshot.docs[0];
+          const empresaData = empresaDoc.data();
+          setUid(empresaData.uid); 
       }
     }
   }
@@ -80,6 +87,13 @@ export default function Login() {
       const usuarioEmpresa = await verificarUsuario(email, "Empresa");
       if (usuarioEmpresa && usuarioEmpresa.senha === senha) {
         router.push(`/telaEmpresa?uid=${uid}`);
+        return;
+      }
+
+      // Verifica se o email está na coleção Empresa
+      const usuarioFuncionario = await verificarUsuario(email, "Funcionarios");
+      if (usuarioFuncionario && usuarioFuncionario.senha === senha) {
+        router.push(`/telaFuncionario?uid=${uid}`);
         return;
       }
       
@@ -157,7 +171,6 @@ function SignUp() {
   const [telefone, setTelefone] = useState("");
   const router = useRouter(); 
 
-
   //Pega o ID do advogado do BD e redireciona o usuario para a /telaAdvogado
   async function fetchId() {
     if (email) {
@@ -166,15 +179,12 @@ function SignUp() {
       if (!querySnapshot.empty) {
           const advogadoDoc = querySnapshot.docs[0];
           const advogadoData = advogadoDoc.data();
-          // setUid(advogadoData.uid);
           const uid = advogadoData.uid; // Obtenha o uid 
-          console.log(uid);
           router.push(`/telaAdvogado?uid=${uid}`);
       }
     }
   } 
   
-
   // Função handleSignUp para criar conta
   const handleSignUp = async () => {
  
@@ -247,7 +257,6 @@ function SignUp() {
     }
   };
 
-
   // Função para formatar o CPF
   const formatarCPF = (value: string): string => {
     // Remove todos os caracteres que não são dígitos
@@ -264,7 +273,6 @@ function SignUp() {
       return `${apenasNumeros.slice(0, 3)}.${apenasNumeros.slice(3, 6)}.${apenasNumeros.slice(6, 9)}-${apenasNumeros.slice(9, 11)}`; // Formato XXX.XXX.XXX-XX
     }
   };
-
 
   return (
     <Card>

@@ -13,7 +13,7 @@ import Navigation from '@/components/navigation/navigation';
 
 const db = getFirestore(app);
 
-export default function TelaAdvogado() {
+export default function TrabahlosEmProcessoAdv() {
     //Puxando o ID do Advogado da URL
     const searchParams = useSearchParams();
     const uid = searchParams.get('uid');
@@ -30,7 +30,7 @@ export default function TelaAdvogado() {
     //Pegando os orçamentos no BD
     const [orcamentos, setOrcamentos] = useState<any[]>([]);
     const [documentData, setDocumentData] = useState<DocumentDataEncapsulamento | null>(null);
-    //Extra
+    //Extras
     const [loading, setLoading] = useState(true); 
 
     interface DocumentData {
@@ -62,7 +62,7 @@ export default function TelaAdvogado() {
 
     const fetchDocumentData = async (docId: string) => {
       try {
-        const docRef = doc(db, 'Orcamento', docId);
+        const docRef = doc(db, 'OrcamentosProcesso', docId);
         const docSnapshot = await getDoc(docRef);
         if (docSnapshot.exists()) {
           const data = docSnapshot.data() as DocumentData;
@@ -95,7 +95,7 @@ export default function TelaAdvogado() {
                     setCpf(advogadoData.cpf);
                     
                     // Após buscar o CPF, busca os orçamentos do advogado
-                    const orcamentoQuery = query(collection(db, 'Orcamento'), where('cpfAdvogado', '==', advogadoData.cpf));
+                    const orcamentoQuery = query(collection(db, 'OrcamentosProcesso'), where('cpfAdvogado', '==', advogadoData.cpf));
                     const orcamentoSnapshot = await getDocs(orcamentoQuery); //orcamentoSnapshot espera até todos os documentos serem buscados
 
                     const orcamentoList = orcamentoSnapshot.docs.map(doc => {
@@ -127,7 +127,7 @@ export default function TelaAdvogado() {
           <SideBarLayout 
             onRefresh={handleRefresh}
             primeiraLetra={primeiraLetra}
-            documentData={documentData}
+            documentData={documentData} 
             orcamentos={orcamentos}
             loading={loading}
             DescricaoBtn1="Solicitar Orçamento"
@@ -145,18 +145,18 @@ export default function TelaAdvogado() {
           />
           <div className="flex flex-col">
             <SearchBar handleRefresh={handleRefresh} primeiraLetra={primeiraLetra} />
-              <div className="grid md:grid-cols-[1fr_400px] gap-4 p-4 flex-1">
-                {/* Aba Trabalhos Enviados */}
-                <WorkList 
-                  orcamentos={orcamentos} 
-                  fetchDocumentData={fetchDocumentData} 
-                  titulo1={"Trabalhos Enviados"}
-                  titulo2={"Total"} 
-                  id={documentData ? documentData.docId : ''}
-                  source="advogado"
-                />
-                {/* Aba Datalhes do Envio */}
-                <WorkDetails
+            <div className="grid md:grid-cols-[1fr_400px] gap-4 p-4 flex-1">
+              {/* Aba Trabalhos em Processo */}
+              <WorkList 
+                orcamentos={orcamentos} 
+                fetchDocumentData={fetchDocumentData} 
+                titulo1={"Trabalhos em Processo"}
+                titulo2={"Total"} 
+                id={documentData ? documentData.docId : ''}
+                source="trabalhosProcessoAdv"
+              />
+              {/* Aba Datalhes do Envio */}
+              <WorkDetails
                   documentData={documentData}
                   loading={loading}
                   cpf={cpf}
@@ -168,7 +168,7 @@ export default function TelaAdvogado() {
                   id={documentData ? documentData.docId : ''}
                   source="advogado" 
                 />
-              </div>
+            </div>
           </div>
         </div>
     </>

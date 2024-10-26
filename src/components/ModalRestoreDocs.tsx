@@ -53,9 +53,8 @@ const ConfirmationRestoreDoc: React.FC<ConfirmationRestoreDocProps> = ({ dd, cpf
           where("Status", "==", "Recusado")
         );
         
-        const queryOrcamentoSnapshot = await getDocs(qOrcamento);
-
         // Caso 3 - Para o advogado restaurar o documento que ele mesmo arquivou
+        const queryOrcamentoSnapshot = await getDocs(qOrcamento);
         if (queryOrcamentoSnapshot.empty) {
           const OrcamentoRef = collection(db, "Orcamento");
           await addDoc(OrcamentoRef, {

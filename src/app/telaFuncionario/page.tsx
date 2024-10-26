@@ -13,14 +13,14 @@ import Navigation from '@/components/navigation/navigation';
 
 const db = getFirestore(app);
 
-export default function TelaAdvogado() {
-    //Puxando o ID do Advogado da URL
+export default function TelaFuncionario() {
+    //Puxando o ID do Funcionario da URL
     const searchParams = useSearchParams();
     const uid = searchParams.get('uid');
     // Inicializando o componente de navegação
-    const { NavegadorHome, RotasAdvogado } = Navigation({ uid });
-    const { NavegadorPaginaInicial, NavegadorEnvioArquivo, NavegadorTrabalhosConcluidos, NavegadorTrabalhosEmProcesso, NavegadorArquivados } = RotasAdvogado();
-    //Informações do Advogado
+    const { NavegadorHome, RotasFuncionario } = Navigation({ uid });
+    const { NavegadorPaginaInicial, NavegadorTrabalhosConcluidos } = RotasFuncionario();
+    //Informações do Funcionario
     const [nome, setNome] = useState('');
     const [sobrenome, setSobrenome] = useState('');
     const [email, setEmail] = useState('');
@@ -30,7 +30,7 @@ export default function TelaAdvogado() {
     //Pegando os orçamentos no BD
     const [orcamentos, setOrcamentos] = useState<any[]>([]);
     const [documentData, setDocumentData] = useState<DocumentDataEncapsulamento | null>(null);
-    //Extra
+    //Extras
     const [loading, setLoading] = useState(true); 
 
     interface DocumentData {
@@ -44,11 +44,8 @@ export default function TelaAdvogado() {
       Sobrenome: string;
       Telefone: string;
       Email: string;
-      cpfAdvogado: string;
-      docId: string;
       valor: string;
       feedbackOrcamento: string;
-      data: string;
     };
     type DocumentDataEncapsulamento =  {
       data: DocumentData,
@@ -59,6 +56,20 @@ export default function TelaAdvogado() {
     const handleRefresh = () => {
         window.location.reload();
     };
+
+    // //Redireciona para a tela 
+    // const NavegadorHome = () => {
+    //   router.push(`/`);
+    // };
+    // const NavegadorPaginaInicial = () => {
+    //   router.push(`/telaAdvogado?uid=${uid}`);
+    // }
+    // const NavegadorEnvioArquivo = () => {
+    //   router.push(`/envioArquivo?uid=${uid}`);
+    // };
+    // const NavegadorArquivadosAdv = () => {
+    //   router.push(`/ArquivadosAdv?uid=${uid}`);
+    // };
 
     const fetchDocumentData = async (docId: string) => {
       try {
@@ -80,22 +91,22 @@ export default function TelaAdvogado() {
         const fetchNome = async () => {
             setLoading(true); //Inicia o carregamento
             try {
-                //Pega as informações do Advogado com base no ID da URL
-                const q = query(collection(db, "Advogado"), where("uid", "==", uid)); //Pega os dados da coleção "Advogado" com base no ID
+                //Pega as informações do Funcionario com base no ID da URL
+                const q = query(collection(db, "Funcionarios"), where("uid", "==", uid)); //Pega os dados da coleção "Advogado" com base no ID
                 const querySnapshot = await getDocs(q); //Executa a consulta e retorna um snapshot contendo os documentos que correspondem à condição
 
                 //Pega os arquivos no Banco de Dados caso querySnapshot não esteja vazio
                 if (!querySnapshot.empty) {
                     console.log("Documento encontrado:", querySnapshot.docs[0].data());
-                    const advogadoData = querySnapshot.docs[0].data();
-                    setNome(advogadoData.nome);         
-                    setSobrenome(advogadoData.sobrenome);
-                    setEmail(advogadoData.email); //Colocando email, telefone e cpf em um estado para mandar pra coleção Orcamento
-                    setTelefone(advogadoData.telefone);
-                    setCpf(advogadoData.cpf);
+                    const funcionarioData = querySnapshot.docs[0].data();
+                    setNome(funcionarioData.nome);         
+                    setSobrenome(funcionarioData.sobrenome);
+                    setEmail(funcionarioData.email); //Colocando email, telefone e cpf em um estado para mandar pra coleção Orcamento
+                    setTelefone(funcionarioData.telefone);
+                    setCpf(funcionarioData.cpf);
                     
-                    // Após buscar o CPF, busca os orçamentos do advogado
-                    const orcamentoQuery = query(collection(db, 'Orcamento'), where('cpfAdvogado', '==', advogadoData.cpf));
+                    // Após buscar o CPF, busca os orçamentos do funcionario
+                    const orcamentoQuery = query(collection(db, 'OrcamentosProcesso'), where('cpfsFuncionarios', 'array-contains', funcionarioData.cpf));
                     const orcamentoSnapshot = await getDocs(orcamentoQuery); //orcamentoSnapshot espera até todos os documentos serem buscados
 
                     const orcamentoList = orcamentoSnapshot.docs.map(doc => {
@@ -107,11 +118,11 @@ export default function TelaAdvogado() {
                     });
                     setOrcamentos(orcamentoList);
                 } else {
-                  console.error("Advogado não encontrado!");
+                  console.error("Funcionario não encontrado!");
                 }
             } catch (error) {
-                console.error("Erro ao buscar o nome do advogado:", error);
-                setNome('Erro ao carregar nome'); //Caso o nome do advogado não seja obtido, a mensagem é exibida no lugar da variável 'nome'
+                console.error("Erro ao buscar o nome do funcionario:", error);
+                setNome('Erro ao carregar nome'); //Caso o nome do funcionario não seja obtido, a mensagem é exibida no lugar da variável 'nome'
             } finally {
                 setLoading(false); //Finaliza o estado de carregamento, independentemente da consulta ser um sucesso ou falhar
             }
@@ -124,53 +135,58 @@ export default function TelaAdvogado() {
     return (
       <>
         <div className="grid md:grid-cols-[260px_1fr] min-h-screen w-full">
-          <SideBarLayout 
-            onRefresh={handleRefresh}
-            primeiraLetra={primeiraLetra}
-            documentData={documentData}
-            orcamentos={orcamentos}
-            loading={loading}
-            DescricaoBtn1="Solicitar Orçamento"
-            DescricaoBtn2="Trabalhos Arquivados"
-            source='advogado'
-            cadastrarFuncionarioIcon={<Send className="w-5 h-5" />}
-            onHome={NavegadorHome}
-            onPaginaInicial={NavegadorPaginaInicial}
-            onEnvioArquivo={NavegadorEnvioArquivo}
-            onTrabalhosConcluidos={NavegadorTrabalhosConcluidos}
-            onTrabalhosEmProcesso={NavegadorTrabalhosEmProcesso}
-            onArquivados={NavegadorArquivados}
+            <SideBarLayout 
+                onRefresh={handleRefresh}
+                primeiraLetra={primeiraLetra}
+                orcamentos={orcamentos}
+                loading={loading}
+                DescricaoBtn1="Solicitar Orçamento"
+                DescricaoBtn2="Trabalhos Arquivados"
+                source='funcionario'
+                cadastrarFuncionarioIcon={<Send className="w-5 h-5" />}
+                onHome={NavegadorHome}
+                onPaginaInicial={NavegadorPaginaInicial}
+                onTrabalhosConcluidos={NavegadorTrabalhosConcluidos}
 
-            onCadastrarFuncionario={NavegadorHome} //rota propria da empresa e que nao será usada aqui, por isso mandando qualquer caminho
-          />
-          <div className="flex flex-col">
-            <SearchBar handleRefresh={handleRefresh} primeiraLetra={primeiraLetra} />
-              <div className="grid md:grid-cols-[1fr_400px] gap-4 p-4 flex-1">
-                {/* Aba Trabalhos Enviados */}
-                <WorkList 
-                  orcamentos={orcamentos} 
-                  fetchDocumentData={fetchDocumentData} 
-                  titulo1={"Trabalhos Enviados"}
-                  titulo2={"Total"} 
-                  id={documentData ? documentData.docId : ''}
-                  source="advogado"
-                />
-                {/* Aba Datalhes do Envio */}
-                <WorkDetails
-                  documentData={documentData}
-                  loading={loading}
-                  cpf={cpf}
-                  primeiraLetra={primeiraLetra}
-                  nome={nome}
-                  sobrenome={sobrenome}
-                  email={email}
-                  resposta={"Resposta do Escritório"}
-                  id={documentData ? documentData.docId : ''}
-                  source="advogado" 
-                />
-              </div>
-          </div>
+                onEnvioArquivo={NavegadorHome} //rotas proprias do advogado e empresa e que nao será usada aqui, por isso mandando qualquer caminho
+                onCadastrarFuncionario={NavegadorHome}
+                onTrabalhosEmProcesso={NavegadorHome}
+                onArquivados={NavegadorHome}
+
+
+
+            />
+            <div className="flex flex-col">
+                <SearchBar handleRefresh={handleRefresh} primeiraLetra={primeiraLetra} />
+                <div className="grid md:grid-cols-[1fr_400px] gap-4 p-4 flex-1">
+                    {/* Aba Trabalhos Enviados */}
+                    <WorkList 
+                        orcamentos={orcamentos} 
+                        fetchDocumentData={fetchDocumentData} 
+                        titulo1={"Trabalhos Enviados"}
+                        titulo2={"Total"}
+                        id={documentData ? documentData.docId : ''} 
+                        source="funcionario"
+                    />
+                    {/* Aba Datalhes do Envio */}
+                    <WorkDetails
+                        documentData={documentData}
+                        loading={loading}
+                        cpf={cpf}
+                        primeiraLetra={primeiraLetra}
+                        nome={nome}
+                        sobrenome={sobrenome}
+                        email={email}
+                        resposta={"Resposta do Escritório"}
+                        id={documentData ? documentData.docId : ''}
+                        source="advogado" 
+                    />
+                </div>
+            </div>
         </div>
     </>
   )
 }
+
+
+
