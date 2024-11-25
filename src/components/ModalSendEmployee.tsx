@@ -1,13 +1,16 @@
 'use client'
 
+import { UsersRound } from 'lucide-react';
 import { useState, useEffect } from 'react'
+import { Badge } from "@/components/ui/badge";
 import { app } from '../app/firebase/firebase';
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/ScrollArea";
-import { updateDoc, doc, collection, addDoc, getDocs, getFirestore, deleteDoc} from "firebase/firestore";
+import { Card, CardContent } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { doc, collection, addDoc, getDocs, getFirestore, deleteDoc} from "firebase/firestore";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 const db = getFirestore(app);
@@ -60,21 +63,19 @@ const ModalSendEmployee: React.FC<ConfirmationProps> = ({dd} ) => {
   }
 
   const enviarDocumento = async () => {
+    
+    // Obter a data atual
+    const dataAtual = new Date();
+    const dia = String(dataAtual.getDate()).padStart(2, "0");
+    const mes = String(dataAtual.getMonth() + 1).padStart(2, "0");
+    const ano = dataAtual.getFullYear();
+    const dataBr = `${dia}/${mes}/${ano}`; // Formato DD/MM/YYYY
 
     //Colocando os CPFs dos Funcionarios selecionados em um Array para conseguir armazenar mais de um no BD
     const cpfsSelecionados = selecionarPessoa.map(funcionarioId => {
       const funcionario = funcionarios.find(f => f.id === funcionarioId);
       return funcionario?.cpf;
     }).filter(cpf => cpf); // Filtra para remover valores undefined
-  
-    if (cpfsSelecionados.length > 0) {
-      const orcamentoRef = doc(db, 'Orcamento', dd.id);
-  
-      await updateDoc(orcamentoRef, {
-        descricaoFuncionario: descricao,
-        cpfsFuncionarios: cpfsSelecionados, // Armazena os CPFs em um array
-      });
-    }
 
     //Enviado o orçamentos para a tela de Orçamentos em Processo
     const OrcamentoRef = collection(db, "OrcamentosProcesso");
@@ -95,10 +96,11 @@ const ModalSendEmployee: React.FC<ConfirmationProps> = ({dd} ) => {
       feedbackOrcamento: dd.feedbackOrcamento,
       respostaAdv: dd.respostaAdv,
       valor: dd.valor,
+      dataFuncionario: dataBr,
     });
     const orcamentoDel = doc(db, "Orcamento", dd.id);
     await deleteDoc(orcamentoDel);
-    
+  
     setIsOpen(false);         //Fecha a Modal
     window.location.reload(); //Atualiza os orçamentos na tela
   };
@@ -106,50 +108,85 @@ const ModalSendEmployee: React.FC<ConfirmationProps> = ({dd} ) => {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline">Delegar ao Funcionário</Button>
+        <button className="text-[12px] text-[#007259] hover:text-[#00AD87] font-semibold flex border-b border-[#007259] mb-2">
+          <UsersRound className="h-4 w-4 mr-1"/>Delegar ao Funcionário
+        </button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[1000px] w-4/5">
+
+      {isOpen && (
+        <div 
+        className="fixed bg-[#000] bg-opacity-20 backdrop-blur-sm transition-opacity z-[50]" 
+        style={{
+          width: '100%',
+          height: '100%', 
+          top: 0,
+          left: -24
+        }}
+      />
+      )}
+
+      <DialogContent className="sm:max-w-[1000px] w-4/5 bg-[#f0f4f8]">
         <DialogHeader>
-          <DialogTitle>Delegar ao Funcionário</DialogTitle>
-          <DialogDescription>
-            Selecione o(s) trabalho(s) que deseja delegar aos funcionários e adicione uma descrição
+          <DialogTitle className='text-3xl font-bold text-[#2b3c56]'>Delegar ao Funcionário</DialogTitle>
+          <DialogDescription className='text-[#53647C] text-[12px] font-semibold'>
+            Selecione os funcionários e adicione uma descrição
           </DialogDescription>
         </DialogHeader>
         <div className="flex gap-4 py-4">
           <div className="flex-1">
-            <h4 className="mb-2 text-sm font-medium">Selecionar Funcionários</h4>
-            <ScrollArea className="h-[300px] rounded-md border p-4">
-
+            <div className="text-[#2B3C56] text-[16px] font-bold mb-2">Selecionar Funcionários</div>
+            <ScrollArea className="h-[300px] pr-4">
               {funcionarios.map((funcionario) => (
-                <div key={funcionario.id} className="flex items-center space-x-2 mb-5">
-                  <Checkbox
-                    id={`funcionario-${funcionario.id}`}
-                    checked={selecionarPessoa.includes(funcionario.id)}
-                    onCheckedChange={() => pessoasSelecionadas(funcionario.id)}
-                  />
-                  <label htmlFor={`funcionario-${funcionario.id}`} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                    <p className='font-bold'>{funcionario.nome} {funcionario.sobrenome}</p>
-                    <p className='text-muted-foreground text-sm'>{funcionario.email}</p>
-                  </label>
+                <div key={funcionario.id} className="grid grid-cols-1 py-1">
+                  <Card key={funcionario.id} className="bg-[#fff] shadow-md rounded-[16px]">
+                    <CardContent className="p-3 flex items-center space-x-4">
+                      {/* Avatar */}
+                      <Avatar className="w-12 h-12">
+                        <AvatarImage src={funcionario.avatar} alt={funcionario.nome} />
+                        <AvatarFallback className="bg-[#E6F3F0] text-[16px] text-[#2B3C56] font-bold">
+                          {funcionario.nome.slice(0, 2)}
+                        </AvatarFallback>
+                      </Avatar>
+
+                      {/* Informações do funcionário */}
+                      <div className="space-y-1 flex-1">
+                        <h3 className="text-[16px] font-bold text-[#2b3c56]">
+                          {funcionario.nome} {funcionario.sobrenome}
+                        </h3>
+                        <Badge className="bg-[#e6f3f0] text-[#007259] hover:bg-[#e6f3f0] hover:text-[#007259]">
+                          {funcionario.email}
+                        </Badge>
+                      </div>
+
+                      {/* Checkbox */}
+                      <div className="flex items-center pr-2">
+                        <Checkbox
+                          id={`funcionario-${funcionario.id}`}
+                          checked={selecionarPessoa.includes(funcionario.id)}
+                          onCheckedChange={() => pessoasSelecionadas(funcionario.id)}
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
                 </div>
               ))}
-             
             </ScrollArea>
           </div>
-          <Separator orientation="vertical" className="h-auto" />
+
+
           <div className="flex-1">
-            <h4 className="mb-2 text-sm font-medium">Descrição</h4>
+            <div className="text-[#2B3C56] text-[16px] font-bold mb-2">Descrição</div>
             <Textarea
               id="descricao"
-              placeholder="Adicione uma descrição ao funcionário sobre o que precisa ser feito"
+              placeholder="Descreva o que precisa ser feito"
               value={descricao}
               onChange={(e) => setDescricao(e.target.value)}
-              className="h-[300px] resize-none"
+              className="h-[300px] resize-none w-full border border-gray-300 rounded-md p-2 placeholder:text-gray-400 placeholder:text-base text-[14px]"
             />
           </div>
         </div>
         <DialogFooter>
-          <Button onClick={enviarDocumento} disabled={selecionarPessoa.length === 0 || descricao.length === 0}>
+          <Button className="bg-[#007259] text-[#fff] hover:bg-[#005c47]" onClick={enviarDocumento} disabled={selecionarPessoa.length === 0 || descricao.length === 0}>
             Enviar ao Funcionário
           </Button>
         </DialogFooter>

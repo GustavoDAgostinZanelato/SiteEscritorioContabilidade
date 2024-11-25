@@ -1,22 +1,24 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Button } from "@/components/ui/button"
+import { UsersRound } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Badge } from "@/components/ui/badge";
 import { app } from '../app/firebase/firebase';
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Card, CardContent } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { collection, query, where, getDocs, getFirestore, doc, getDoc } from "firebase/firestore";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog"
-import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 
 const db = getFirestore(app);
 
-export default function ModalChangeEnployee ({id}: {id: string}) {
+export default function ModalViewEmployee ({id}: {id: string}) {
   const [funcionarios, setFuncionarios] = useState<any[]>([]);
   const [orcamento, setOrcamento] = useState<any>(null);
+  const [dataLoaded, setDataLoaded] = useState(false);
+  const [funcionariosLoaded, setFuncionariosLoaded] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [open, setOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
 
   const fetchOrcamento = async () => {
     setLoading(true);
@@ -27,7 +29,6 @@ export default function ModalChangeEnployee ({id}: {id: string}) {
       if (docSnap.exists()) {
         const docData = docSnap.data();
         setOrcamento(docData);
-        await fetchFuncionarios(docData.cpfsFuncionarios);
       } else {
         console.log("Documento não encontrado!");
       }
@@ -38,51 +39,74 @@ export default function ModalChangeEnployee ({id}: {id: string}) {
     }
   };
 
-const fetchFuncionarios = async (cpfsFuncionarios: string) => {
-  try {
-    const cpfsArray = cpfsFuncionarios.match(/([0-9]{3}\.[0-9]{3}\.[0-9]{3}-[0-9]{2})/g); // Extrai os CPFs da string
-    if (cpfsArray) {
-      const promises = cpfsArray.map(async (cpf) => {
-        const trimmedCpf = cpf.trim(); // Remove espaços em branco
-        const q = query(collection(db, "Funcionarios"), where("cpf", "==", trimmedCpf));
-        const querySnapshot = await getDocs(q);
-        return querySnapshot.docs.map(doc => doc.data()); // Retorna os dados dos funcionários encontrados
-      });
-      const results = await Promise.all(promises);
-      const funcionariosEncontrados = results.flat();
-      setFuncionarios(funcionariosEncontrados); // Atualiza o estado com todos os funcionários encontrados
+  const fetchFuncionarios = async (cpfsFuncionarios: string) => {
+    if (funcionariosLoaded) return; // Evita múltiplas chamadas desnecessárias
+    console.log("Buscando funcionários...");
+
+    try {
+      const cpfsArray = cpfsFuncionarios.match(/([0-9]{3}\.[0-9]{3}\.[0-9]{3}-[0-9]{2})/g); // Extrai os CPFs da string
+      if (cpfsArray) {
+        const promises = cpfsArray.map(async (cpf) => {
+          const trimmedCpf = cpf.trim();
+          const q = query(collection(db, "Funcionarios"), where("cpf", "==", trimmedCpf));
+          const querySnapshot = await getDocs(q);
+          return querySnapshot.docs.map(doc => doc.data());
+        });
+        const results = await Promise.all(promises);
+        const funcionariosEncontrados = results.flat();
+        setFuncionarios(funcionariosEncontrados);
+        setFuncionariosLoaded(true); // Marca os funcionários como carregados
+      }
+    } catch (error) {
+      console.error("Erro ao buscar funcionários:", error);
     }
-  } catch (error) {
-    console.error("Erro ao buscar funcionários:", error);
-  }
-};
+  };
 
   useEffect(() => {
-    if (open && id) { // Busca os dados quando o modal é aberto e o ID está presente
+    if (isOpen && id && !dataLoaded) {
       fetchOrcamento();
+      setDataLoaded(true);
     }
-  }, [id]); //Executa quando possuir um id para comparar
+  }, [id, dataLoaded]);
 
   useEffect(() => {
-    if (orcamento) {
+    if (orcamento && !funcionariosLoaded) {
       const cpfsFuncionarios = Array.isArray(orcamento.cpfsFuncionarios)
-        ? orcamento.cpfsFuncionarios.join('') // Converte o array em uma string, se necessário
+        ? orcamento.cpfsFuncionarios.join('')
         : orcamento.cpfsFuncionarios;
-      fetchFuncionarios(cpfsFuncionarios); // Chama a função com cpfsFuncionarios
+      fetchFuncionarios(cpfsFuncionarios);
     }
-  }, [orcamento]); // Executa quando orcamento mudar
+  }, [orcamento, funcionariosLoaded]);
+
+  useEffect(() => {
+    setDataLoaded(false);
+    setFuncionariosLoaded(false); // Reseta a verificação de funcionários quando o ID muda
+  }, [id]);
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="bg-[#007259] text-[#fff] hover:bg-[#005c47] hover:text-[#fff]">
-          Visualizar Funcionários
-        </Button>
+        <button className="text-[12px] text-[#007259] hover:text-[#00AD87] font-semibold flex border-b border-[#007259] mb-2">
+          <UsersRound className="h-4 w-4 mr-1"/>Visualizar Funcionários
+        </button>
       </DialogTrigger>
+
+      {isOpen && (
+        <div 
+        className="fixed bg-[#000] bg-opacity-20 backdrop-blur-sm transition-opacity z-[50]" 
+        style={{
+          width: '100%',
+          height: '100%', 
+          top: 0,
+          left: -24
+        }}
+      />
+      )}
+
       <DialogContent className="sm:max-w-[600px] bg-[#f0f4f8]">
         <DialogHeader className="border-b border-[#d0d5dd] pb-5">
           <DialogTitle className="text-3xl font-bold text-[#2b3c56]">Funcionários Escalados</DialogTitle>
-          <DialogDescription className="text-[#4a5b75]">
+          <DialogDescription className="text-[#53647C] text-[12px] font-semibold">
             Veja os colaboradores que estão desenvolvendo seu trabalho
           </DialogDescription>
         </DialogHeader>

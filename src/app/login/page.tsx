@@ -11,7 +11,6 @@ import { registrarComEmailESenha, loginComEmailESenha } from "../firebase/authen
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "../firebase/firebase"; 
 
-
 // Aba LOGIN
 export default function Login() { 
 
@@ -55,7 +54,6 @@ export default function Login() {
   }
   fetchId();
 
-
   // Função para verificar usuário na coleção
   const verificarUsuario = async (email: string, colecao: string) => {
     const q = query(collection(db, colecao), where("email", "==", email));
@@ -65,7 +63,6 @@ export default function Login() {
     }
     return null; // Retorna null se o email não for encontrado
   };
-
 
   const handleLogin = async () => {
     try {
@@ -157,7 +154,6 @@ export default function Login() {
     </div>
   );
 }
-
 
 // Aba CRIAR CONTA
 function SignUp() {

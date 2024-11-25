@@ -1,7 +1,7 @@
 import { ReactNode } from 'react';
 import { Button } from "@/components/ui/button";
-import SvgComponentClaro from "@/components/ui/logoClaro";
 import { House, SquareCheckBig, Layers3, Archive } from 'lucide-react';
+import { usePathname } from 'next/navigation';
 
 interface DocumentData {
   CaminhoArquivo: string;
@@ -60,91 +60,171 @@ export default function SideBarLayout({
   onTrabalhosConcluidos,
   onTrabalhosEmProcesso,
   onArquivados,
-}: SideBarLayoutProps) {
-
+  }: SideBarLayoutProps) {
+  
+  const pathname = usePathname(); // Obtém a rota base da URL
 
   return (
-    <div className="grid md:grid-cols-[260px_1fr] min-h-screen w-full">
-      <div className="flex flex-col bg-background text-foreground border-r">
-        <header className="flex items-center p-4">
-          {loading ? (
-            <div className="p-5" />
-          ) : (
-            <button onClick={onHome} className="pl-5 pt-1">
-              <SvgComponentClaro />
-            </button>
-          )}
-        </header>
-
+    <div className="w-[260px] bg-[#007259]" >
+      <header className="flex items-center p-3" />
         {source === 'advogado' ? (
         //Barra de navegação TelaAdvogado
           <nav className="flex flex-col gap-1 p-2">
-            <Button variant="ghost" className="justify-start gap-2 px-3 py-2 rounded-md hover:bg-muted" onClick={onPaginaInicial}>
-              <House className="w-5 h-5" />
-              Página Inicial
+            <Button 
+              variant="ghost" 
+              onClick={onPaginaInicial}
+              className={`justify-start gap-4 px-4 py-8 rounded-md ${
+                pathname === '/telaAdvogado'
+                  ? 'text-[#007259] bg-[#fff]/95'
+                  : 'text-[#fff] hover:bg-[#EBEDF0]/10 hover:text-[#fff]'
+              } `}
+            >
+              <House className="w-5 h-5" />Página Inicial
             </Button>
-            <Button variant="ghost" className="justify-start gap-2 px-3 py-2 rounded-md hover:bg-muted" onClick={onEnvioArquivo}>
-              {cadastrarFuncionarioIcon}
-              {DescricaoBtn1}
+            <Button 
+              variant="ghost" 
+              onClick={onEnvioArquivo}className={`justify-start gap-4 px-4 py-8 rounded-md ${
+                pathname === '/envioArquivo'
+                  ? 'text-[#007259] bg-[#fff]/95'
+                  : 'text-[#fff] hover:bg-[#EBEDF0]/10 hover:text-[#fff]'
+              } `}
+            >
+              {cadastrarFuncionarioIcon}{DescricaoBtn1}
             </Button>
-            <Button variant="ghost" className="justify-start gap-2 px-3 py-2 rounded-md hover:bg-muted" onClick={onTrabalhosConcluidos}>
-              <SquareCheckBig className="h-5 w-5" />
-              Trabalhos Concluídos
+            <Button 
+              variant="ghost" 
+              onClick={onTrabalhosConcluidos}
+              className={`justify-start gap-4 px-4 py-8 rounded-md ${
+              pathname === '/TrabalhosConcluidosAdv'
+                  ? 'text-[#007259] bg-[#fff]/95'
+                  : 'text-[#fff] hover:bg-[#EBEDF0]/10 hover:text-[#fff]'
+              } `}
+            >
+              <SquareCheckBig className="w-5 h-5" />Concluídos
             </Button>
-            <Button variant="ghost" className="justify-start gap-2 px-3 py-2 rounded-md hover:bg-muted" onClick={onTrabalhosEmProcesso}>
-              <Layers3 className="h-5 w-5" />
-              Trabalhos em Processo
+            <Button 
+              variant="ghost" 
+              onClick={onTrabalhosEmProcesso}
+              className={`justify-start gap-4 px-4 py-8 rounded-md ${
+              pathname === '/TrabalhosEmProcessoAdv'
+                    ? 'text-[#007259] bg-[#fff]/95'
+                    : 'text-[#fff] hover:bg-[#EBEDF0]/10 hover:text-[#fff]'
+                } `}
+            >
+              <Layers3 className="w-5 h-5" />Em Andamento
             </Button>
-            <Button variant="ghost" className="justify-start gap-2 px-3 py-2 rounded-md hover:bg-muted" onClick={onArquivados}>
-              <Archive className="w-5 h-5" />
-              {DescricaoBtn2}
+            <Button 
+              variant="ghost" onClick={onArquivados}
+              className={`justify-start gap-4 px-4 py-8 rounded-md ${
+              pathname === '/ArquivadosAdv'
+                    ? 'text-[#007259] bg-[#fff]/95'
+                    : 'text-[#fff] hover:bg-[#EBEDF0]/10 hover:text-[#fff]'
+                } `}
+            >
+              <Archive className="w-5 h-5" />{DescricaoBtn2}
             </Button>
+            <div className="fixed bottom-0 p-4 pb-8">
+              <div className="text-[16px] text-[#fff]/60">Página do Cliente</div>
+              <div className="text-[12px] text-[#fff]/60">Copyright 2024 ®</div>
+            </div>
           </nav>
 
         //Barra de navegação TelaEmpresa
         ) : source === 'empresa' ? (
           <nav className="flex flex-col gap-1 p-2">
-            <Button variant="ghost" className="justify-start gap-2 px-3 py-2 rounded-md hover:bg-muted" onClick={onPaginaInicial}>
-              <House className="w-5 h-5" />
-              Página Inicial
+            <Button 
+              variant="ghost" 
+              onClick={onPaginaInicial}
+              className={`justify-start gap-4 px-4 py-8 rounded-md ${
+                pathname === '/telaEmpresa'
+                  ? 'text-[#007259] bg-[#fff]/95'
+                  : 'text-[#fff] hover:bg-[#EBEDF0]/10 hover:text-[#fff]'
+              } `}
+            >
+              <House className="w-5 h-5"/>Página Inicial
             </Button>
-            <Button variant="ghost" className="justify-start gap-2 px-3 py-2 rounded-md hover:bg-muted" onClick={onCadastrarFuncionario}>
-              {cadastrarFuncionarioIcon}
-              {DescricaoBtn1}
+            <Button 
+              variant="ghost" 
+              onClick={onCadastrarFuncionario}
+              className={`justify-start gap-4 px-4 py-8 rounded-md ${
+                pathname === '/cadastrarFuncionario'
+                  ? 'text-[#007259] bg-[#fff]/95'
+                  : 'text-[#fff] hover:bg-[#EBEDF0]/10 hover:text-[#fff]'
+                } `} 
+            >
+              {cadastrarFuncionarioIcon}{DescricaoBtn1}
             </Button>
-            <Button variant="ghost" className="justify-start gap-2 px-3 py-2 rounded-md hover:bg-muted" onClick={onTrabalhosConcluidos}>
-              <SquareCheckBig className="h-5 w-5" />
-              Trabalhos Concluídos
+            <Button 
+              variant="ghost" 
+              onClick={onTrabalhosConcluidos}
+              className={`justify-start gap-4 px-4 py-8 rounded-md ${
+                pathname === '/TrabalhosConcluidosAdm'
+                  ? 'text-[#007259] bg-[#fff]/95'
+                  : 'text-[#fff] hover:bg-[#EBEDF0]/10 hover:text-[#fff]'
+                } `} 
+            >
+              <SquareCheckBig className="h-5 w-5"/>Concluídos
             </Button>
-            <Button variant="ghost" className="justify-start gap-2 px-3 py-2 rounded-md hover:bg-muted" onClick={onTrabalhosEmProcesso}>
-              <Layers3 className="h-5 w-5" />
-              Trabalhos em Processo
+            <Button 
+              variant="ghost" 
+              onClick={onTrabalhosEmProcesso}
+              className={`justify-start gap-4 px-4 py-8 rounded-md ${
+                pathname === '/TrabalhosEmProcessoAdm'
+                  ? 'text-[#007259] bg-[#fff]/95'
+                  : 'text-[#fff] hover:bg-[#EBEDF0]/10 hover:text-[#fff]'
+                } `} 
+            >
+              <Layers3 className="h-5 w-5"/>Em Andamento
             </Button>
-            <Button variant="ghost" className="justify-start gap-2 px-3 py-2 rounded-md hover:bg-muted" onClick={onArquivados}>
-              <Archive className="w-5 h-5" />
-              {DescricaoBtn2}
+            <Button 
+              variant="ghost" 
+              onClick={onArquivados}
+              className={`justify-start gap-4 px-4 py-8 rounded-md ${
+                pathname === '/ArquivadosEmpresa'
+                  ? 'text-[#007259] bg-[#fff]/95'
+                  : 'text-[#fff] hover:bg-[#EBEDF0]/10 hover:text-[#fff]'
+                } `} 
+            >
+              <Archive className="w-5 h-5"/>{DescricaoBtn2}
             </Button>
+            <div className="fixed bottom-0 p-4 pb-8">
+              <div className="text-[16px] text-[#fff]/60">Página do Adminstrador</div>
+              <div className="text-[12px] text-[#fff]/60">Copyright 2024 ®</div>
+            </div>
           </nav>
         ) : (
-
+          
           //Barra de navegação TelaFuncionario
           <nav className="flex flex-col gap-1 p-2">
-            <Button variant="ghost" className="justify-start gap-2 px-3 py-2 rounded-md hover:bg-muted" onClick={onPaginaInicial}>
-              <House className="w-5 h-5" />
+            <Button
+              variant="ghost" 
+              onClick={onPaginaInicial}
+              className={`justify-start gap-4 px-4 py-8 rounded-md ${
+                pathname === '/telaFuncionario'
+                  ? 'text-[#007259] bg-[#fff]/95'
+                  : 'text-[#fff] hover:bg-[#EBEDF0]/10 hover:text-[#fff]'
+              } `}
+            >
+              <House className="w-5 h-5"/>
               Página Inicial
             </Button>
-            <Button variant="ghost" className="justify-start gap-2 px-3 py-2 rounded-md hover:bg-muted" onClick={onTrabalhosConcluidos}>
-              <SquareCheckBig className="h-5 w-5" />
-              Trabalhos Concluídos
+            <Button 
+              variant="ghost" 
+              onClick={onTrabalhosConcluidos}
+              className={`justify-start gap-4 px-4 py-8 rounded-md ${
+                pathname === '/TrabalhosConcluidosFcn'
+                  ? 'text-[#007259] bg-[#fff]'
+                  : 'text-[#fff] hover:bg-[#EBEDF0]/10 hover:text-[#fff]'
+              } `}
+            >
+              <SquareCheckBig className="h-5 w-5"/>Trabalhos Concluídos
             </Button>
+            <div className="fixed bottom-0 p-4 pb-8">
+              <div className="text-[16px] text-[#fff]/60">Página do Funcionário</div>
+              <div className="text-[12px] text-[#fff]/60">Copyright 2024 ®</div>
+            </div>
           </nav>
         )}  
       </div>
-
-      {/* Conteúdo dinâmico */}
-      <div className="p-4">
-        {children}
-      </div>
-    </div>
-  );
+  ); 
 }

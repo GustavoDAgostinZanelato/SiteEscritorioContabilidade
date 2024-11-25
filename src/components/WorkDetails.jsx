@@ -1,88 +1,135 @@
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { VisualizadorPDF } from '@/components/VisualizadorPDF';
 import { VisualizadorPDFadv } from '@/components/VisualizadorPDFadv';
-import { useEffect, useState } from 'react';
+import { VisualizadorPDFFcn } from '@/components/VisualizadorPDFFcn';
+import { Tag } from 'lucide-react';
 
-export const WorkDetails = ({ documentData, loading, cpf, primeiraLetra, nome, sobrenome, email, id, source, resposta }) => {
+export const WorkDetails = ({ documentData, loading, cpf, source }) => {
 
   if (loading) {
     return <br />;
   }
   
   return (
-    <div className="bg-muted rounded-md overflow-hidden flex-1">
-      <div className="border-b p-3 bg-background">
-        <div className="font-medium pb-14"/>
-      </div>
-      <div className="p-4 flex flex-col gap-4">
+    <div className="bg-[#fff] rounded-lg overflow-hidden flex-1">
+      <div className="p-5 flex flex-col gap-4">
         {documentData ? (
           <>
-            <div className="flex items-center gap-3">
-              <Avatar className="h-9 w-9">
-                <AvatarFallback>{documentData.data.Nome ? documentData.data.Nome.slice(0, 2) : ''}</AvatarFallback>
-              </Avatar>
+            <div className="relative flex items-center gap-3">
               <div className="flex-1">
-                <div className="font-medium">{documentData.data.Nome} {documentData.data.Sobrenome}</div>
-                <div className="text-muted-foreground text-sm">{documentData.data.Email}</div>
+                <div className="font-bold text-[28px] text-[#2B3C56] max-w-[500px]">{documentData.data.Titulo}</div>
               </div>
-              <div className="text-muted-foreground text-sm">{documentData.data.DataEnvio}</div>
+              <div className={`absolute top-0 right-0 px-2 py-1 rounded-md text-[12px] font-semibold ${
+                documentData.data.Status === "Resposta Recebida"
+                  ? " text-[#3657BB] bg-[#B5D1F9]" 
+                : 
+                documentData.data.Status === "Aguardando Resposta"
+                  ? " text-[#908946] bg-[#F6F7BB]"
+                :
+                documentData.data.Status === "Concluído"
+                  ? " text-[#006972] bg-[#BBF7F6]"
+                :
+                (documentData.data.Status === "Revisar" || documentData.data.Status === 'Aguardando Pagamento') && source === 'funcionario'
+                  ? " text-[#006972] bg-[#BBF7F6]"
+                : 
+                documentData.data.Status === "Revisar"
+                  ? "text-[#844690] bg-[#E5BBF7]"
+                :
+                documentData.data.Status === "Aguardando Pagamento"
+                  ? "text-[#BB6B36] bg-[#F9D7B5]"
+                :
+                documentData.data.Status === "Arquivado" || documentData.data.Status === "Recusado" || documentData.data.Status === "Recusado pelo Escritório"
+                  ? " text-[#BB3636] bg-[#F9B5B5]"
+                : "text-[#438d5f] bg-[#bbf7d0]"
+                }`}
+              >
+                <div className='flex'>
+                  <Tag className='w-4 h-4 mr-1' /> 
+                  {documentData.data.Status === "Aguardando Resposta" && source === "advogado"
+                      ? "Aguardando Aprovação"
+                      : (documentData.data.Status === "Aprovado" && source === "AndamentoAdv" || source === "EmAndamentoAdm"
+                        ? "Em Andamento"
+                        :  (documentData.data.Status === "Aguardando Resposta" && source === "empresa"
+                            ? "Doc Recebido"
+                            : (documentData.data.Status === "Resposta Recebida" && source === "empresa"
+                              ? "Resposta Enviada"
+                              : (documentData.data.Status === 'Revisar' && source === 'concluidosFnc')
+                              ? 'Enviado para Revisão'
+                              : documentData.data.Status
+                            )
+                          )
+                        )
+                      }
+                </div> 
+              </div>
             </div>
-            <div className="prose">
-              <p className="pb-5 pt-6">{documentData.data.Descricao}</p>
-              <p className="text-muted-foreground text-sm pb-6">Prazo de Entrega: {documentData.data.DataEntrega}</p>
-              
-            
+
+            {documentData && (
+              source === 'ArquivadosAdm' || documentData.data.Status === 'Recusado' ? (
+              <div className="flex space-x-2">
+                <p className="px-2 py-1 rounded-md text-[12px] font-semibold text-[#469061] bg-[#E6F3F0]">Data Recusado: {documentData.data.DataRecusado}</p>
+              </div>
+              ) : source === 'EmAndamentoAdm' ? (
+                <div className="flex space-x-2">
+                  <p className="px-2 py-1 rounded-md text-[12px] font-semibold text-[#469061] bg-[#E6F3F0]">Prazo de Entrega: {documentData.data.DataEntrega}</p>
+                  <p className="px-2 py-1 rounded-md text-[12px] font-semibold text-[#469061] bg-[#E6F3F0]">Recebido: {documentData.data.DataEnvio} </p>
+                </div>
+              ) : source === 'ConcluidosAdv' || source === 'ConcluidosAdm' || source === 'concluidosFnc' ? (
+                <div className="flex space-x-2">
+                  <p className="px-2 py-1 rounded-md text-[12px] font-semibold text-[#469061] bg-[#E6F3F0]">Data Conclusão: {documentData.data.DataConclusao}</p>
+                </div>
+              ) : documentData.data.Status === 'Arquivado' || documentData.data.Status === 'Recusado pelo Escritório'  ? (
+                <div className="flex space-x-2">
+                  <p className="px-2 py-1 rounded-md text-[12px] font-semibold text-[#469061] bg-[#E6F3F0]">Data Arquivamento: {documentData.data.DataArquivamento}</p>
+                </div>
+              ) : source === 'funcionario'  ? (
+                <div className="flex space-x-2">
+                  <p className="px-2 py-1 rounded-md text-[12px] font-semibold text-[#469061] bg-[#E6F3F0]">Prazo de Entrega: {documentData.data.DataEntrega}</p>
+                  <p className="px-2 py-1 rounded-md text-[12px] font-semibold text-[#469061] bg-[#E6F3F0]">Recebido: {documentData.data.dataFuncionario}</p>
+                </div>
+              ) : (
+                <div className="flex space-x-2">
+                  <p className="px-2 py-1 rounded-md text-[12px] font-semibold text-[#469061] bg-[#E6F3F0]">Prazo de Entrega: {documentData.data.DataEntrega}</p>
+                  <p className="px-2 py-1 rounded-md text-[12px] font-semibold text-[#469061] bg-[#E6F3F0]">Data de Envio: {documentData.data.DataEnvio} </p>
+                </div>
+              )
+            )}
+           
+            <div className="prose mt-8">
+              <p className="pr-4 max-h-[210px] overflow-y-auto text-[16px] text-justify">{documentData.data.Descricao}</p>
+    
               {documentData && (
-                source === 'advogado' ? (
+                source === 'advogado' || source === 'AndamentoAdv' || source === 'ConcluidosAdv' ? (
                   <VisualizadorPDFadv 
                     documentData={documentData.data} 
                     cpf={cpf} 
-                    id={documentData.docId} 
+                    id={documentData.docId}
+                    source = {source}
                   />
-                ) : source === 'empresa' ? (
+                  
+                ) : source === 'empresa' || source === 'EmAndamentoAdm' || source === 'ArquivadosAdm' || source === 'ConcluidosAdm' ? (
                   <VisualizadorPDF 
                     documentData={documentData.data} 
                     cpf={cpf} 
                     id={documentData.docId}
-                    nomeBotao="Visualizar e Aprovar Documento"
+                    source = {source}
                   />
-                ) : (
-                  <VisualizadorPDF 
+                ) : source === 'funcionario' || source === 'concluidosFnc' ? (
+                  <VisualizadorPDFFcn
                     documentData={documentData.data} 
                     cpf={cpf} 
                     id={documentData.docId}
-                    nomeBotao="Visualizar Documento"
+                    source = {source}
                   />
-                )
+                ) : null
               )}
-              
-              {/* <p className="mt-10 font-medium">Funcionário(s) Escalados pro Trabalho</p>
-              {documentData.data.cpfsFuncionarios.map((cpf, index) => (
-                <p key={index} className="mt-2">{cpf}</p>
-              ))} */}
-              {/* <p className="mt-10 font-medium">Funcionário(s) Escalados pro Trabalho</p>
-              {funcionarios.length > 0 ? (
-                funcionarios.map((funcionario, index) => (
-                  <p key={index} className="mt-2">{funcionario.nome} ({funcionario.cpf})</p>
-                ))
-              ) : (
-                <p className="mt-2">Nenhum funcionário encontrado</p>
-              )} */}
-
             </div>
           </>
         ) : (
           <>
-            <div className="flex items-center gap-3">
-              <Avatar className="h-9 w-9">
-                <AvatarFallback>{primeiraLetra}</AvatarFallback>
-              </Avatar>
-              <div className="flex-1">
-                <div className="font-medium">{nome} {sobrenome}</div>
-                <div className="text-muted-foreground text-sm">{email}</div>
-              </div>
+            <div>
+              <div className="font-semibold text-[20px] text-[#2B3C56]">Descrição</div>
+              <div className="text-[#007259] text-[12px] font-semibold ">Abra um documento para ver mais detalhes</div>
             </div>
-            <h1 className="text-muted-foreground text-sm">Abra um documento para ver mais detalhes</h1>
           </>
         )}
       </div>

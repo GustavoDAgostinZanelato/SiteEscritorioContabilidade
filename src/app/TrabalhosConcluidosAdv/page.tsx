@@ -8,13 +8,13 @@ import { useSearchParams } from 'next/navigation';
 import { SearchBar } from '@/components/SearchBar';
 import SideBarLayout from '@/components/SideBarLayout';
 import { WorkDetails } from '@/components/WorkDetails';
-import DocumentFilter from '@/components/DocumentFilter'; 
+import DocumentFilter from '@/components/DocumentFilter';
 import { collection, query, where, getDocs, getFirestore, doc, getDoc } from "firebase/firestore";
 import Navigation from '@/components/navigation/navigation';
 
 const db = getFirestore(app);
 
-export default function ArquivadosAdv() {
+export default function TrabalhosConcluidosAdv() {
     //Puxando o ID do Advogado da URL
     const searchParams = useSearchParams();
     const uid = searchParams.get('uid');
@@ -35,52 +35,50 @@ export default function ArquivadosAdv() {
     const [filteredOrcamentos, setFilteredOrcamentos] = useState(orcamentos);
     //Extras
     const [loading, setLoading] = useState(true); 
-    
+
     interface DocumentData {
-      CaminhoArquivo: string;
-      DataEntrega: string;
-      DataEnvio: string;  
-      Descricao: string;
-      Email: string;
-      Nome: string;
-      Sobrenome: string;
-      Status: string;
-      Telefone: string;
-      Titulo: string;
-      cpf: string;
-      id: string;
-    }
+        CaminhoArquivo: string;
+        DataEntrega: string;
+        DataEnvio: string;  
+        Descricao: string;
+        Status: string;
+        Titulo: string;
+        Nome: string;
+        Sobrenome: string;
+        Telefone: string;
+        Email: string;
+        cpfAdvogado: string;
+        docId: string;
+        valor: string;
+        feedbackOrcamento: string;
+        data: string;
+    };
     type DocumentDataEncapsulamento =  {
-      data: DocumentData,
-      docId: string,
+    data: DocumentData,
+    docId: string,
     }
-    
+
     // Função para recarregar a página
     const handleRefresh = () => {
         window.location.reload();
-    };
-   
-    // Função para buscar os dados do documento no Firestore
+    };  
     const fetchDocumentData = async (docId: string) => {
-      try {
-        const docRef = doc(db, 'OrcamentosArquivados', docId);
-        const docSnapshot = await getDoc(docRef);
-        if (docSnapshot.exists()) {
-          const data = docSnapshot.data() as DocumentData;
-          setDocumentData({
-            data: data,
-            docId: docId,
-          });
-        } else {
-          console.log('Documento não encontrado');
+        try {
+          const docRef = doc(db, 'TrabalhosConcluidos', docId);
+          const docSnapshot = await getDoc(docRef);
+          if (docSnapshot.exists()) {
+            const data = docSnapshot.data() as DocumentData;
+            // Encapsulando os dados em uma propriedade 'data'
+            setDocumentData({ data, docId }); // type 'DocumentData' is not assignabel to type 'string'
+          } else {
+            console.log('Documento não encontrado');
+          }
+        } catch (error) {
+          console.error('Erro ao buscar documento:', error);
         }
-      } catch (error) {
-        console.error('Erro ao buscar documento:', error);
-      }
-    };
-    
+      };
 
-    useEffect(() => {
+      useEffect(() => {
         const fetchNome = async () => {
             setLoading(true); //Inicia o carregamento
             try {
@@ -94,17 +92,17 @@ export default function ArquivadosAdv() {
                     const advogadoData = querySnapshot.docs[0].data();
                     setNome(advogadoData.nome);         
                     setSobrenome(advogadoData.sobrenome);
-                    setEmail(advogadoData.email); //Colocando email, telefone e cpf em um estado para mandar pra coleção OrcamentosArquivadosCPF
+                    setEmail(advogadoData.email); //Colocando email, telefone e cpf em um estado para mandar pra coleção Orcamento
                     setTelefone(advogadoData.telefone);
                     setCpf(advogadoData.cpf);
                     
                     // Após buscar o CPF, busca os orçamentos do advogado
-                    const OrcamentosArquivadosQuery = query(collection(db, 'OrcamentosArquivados'), 
-                    where('cpfAdvogado', '==', advogadoData.cpf), 
-                    where("cpfEmpresa", "==", "null"),
-                  );
-                    const OrcamentosArquivadosSnapshot = await getDocs(OrcamentosArquivadosQuery); //orcamentoSnapshot espera até todos os documentos serem buscados
-                    const orcamentoList = OrcamentosArquivadosSnapshot.docs.map(doc => {
+                    const orcamentoQuery = query(collection(db, 'TrabalhosConcluidos'), 
+                    where('cpfAdvogado', '==', advogadoData.cpf),
+                    where('Indice', '==', 'Pronto pra o cliente'));
+                    const orcamentoSnapshot = await getDocs(orcamentoQuery); //orcamentoSnapshot espera até todos os documentos serem buscados
+
+                    const orcamentoList = orcamentoSnapshot.docs.map(doc => {
                       const data = doc.data() as DocumentData; //Realizando a tipagem de orcamentoList com DocumentData
                       return {
                         ...data,
@@ -127,56 +125,57 @@ export default function ArquivadosAdv() {
         }
     }, [uid]); //Sempre que a variável 'uid' mudar, o useEffect será executado, pois ela está listada nas dependências do hook
 
-    
-    return (
-      <>
+    return(
+        <>
         <div className="flex flex-col h-screen bg-[#E6F3F0]">
-          <SearchBar handleRefresh={handleRefresh} onHome={NavegadorHome} primeiraLetra={primeiraLetra}>
-              <DocumentFilter 
-              orcamentos={orcamentos} 
-              onFilterChange={setFilteredOrcamentos} 
-              source="trabalhosArquivados" 
-              />
-          </SearchBar>
-          <div className="flex flex-1 overflow-hidden">
-            <SideBarLayout 
-                onRefresh={handleRefresh}
-                primeiraLetra={primeiraLetra}
-                orcamentos={orcamentos}
-                loading={loading}
-                DescricaoBtn1='Solicitar Orçamento'
-                DescricaoBtn2='Arquivados'
-                source='advogado'
-                cadastrarFuncionarioIcon={<Send className="w-5 h-5" />}
-                onHome={NavegadorHome}
-                onPaginaInicial={NavegadorPaginaInicial}
-                onEnvioArquivo={NavegadorEnvioArquivo}
-                onTrabalhosConcluidos={NavegadorTrabalhosConcluidos}
-                onTrabalhosEmProcesso={NavegadorTrabalhosEmProcesso}
-                onArquivados={NavegadorArquivados}
+            <SearchBar handleRefresh={handleRefresh} onHome={NavegadorHome} primeiraLetra={primeiraLetra}>
+                <DocumentFilter 
+                orcamentos={orcamentos} 
+                onFilterChange={setFilteredOrcamentos} 
+                source="trabalhosConcluidosAdv" 
+                />
+            </SearchBar>
+            <div className="flex flex-1 overflow-hidden">
+                <SideBarLayout 
+                    onRefresh={handleRefresh}
+                    primeiraLetra={primeiraLetra}
+                    documentData={documentData} 
+                    orcamentos={orcamentos}
+                    loading={loading}
+                    DescricaoBtn1="Solicitar Orçamento"
+                    DescricaoBtn2="Arquivados"
+                    source='advogado'
+                    cadastrarFuncionarioIcon={<Send className="w-5 h-5" />}
+                    onHome={NavegadorHome}
+                    onPaginaInicial={NavegadorPaginaInicial}
+                    onEnvioArquivo={NavegadorEnvioArquivo}
+                    onTrabalhosConcluidos={NavegadorTrabalhosConcluidos}
+                    onTrabalhosEmProcesso={NavegadorTrabalhosEmProcesso}
+                    onArquivados={NavegadorArquivados}
 
-                onCadastrarFuncionario={NavegadorHome} //rota propria da empresa e que nao será usada aqui, por isso mandando qualquer caminho
-            />
-            <div className="flex flex-1 overflow-hidden p-6 gap-6">
-              {/* Aba Trabalhos Recusados */}
-              <WorkList 
-                  orcamentos={filteredOrcamentos} 
-                  fetchDocumentData={fetchDocumentData} 
-                  titulo1={"Trabalhos Arquivados"} 
-                  titulo2={"Total"} 
-                  id={documentData ? documentData.docId : ''}
-                  source="trabalhosArquivados"
+                    onCadastrarFuncionario={NavegadorHome} //rota propria da empresa e que nao será usada aqui, por isso mandando qualquer caminho
                 />
-                {/* Aba Datalhes do Envio */}
-                <WorkDetails
-                  documentData={documentData}
-                  loading={loading}
-                  cpf={cpf}
-                  source="advogado"
-                />
+            
+                <div className="flex flex-1 overflow-hidden p-6 gap-6">
+                    {/* Aba Trabalhos em Processo */}
+                    <WorkList 
+                        orcamentos={filteredOrcamentos} 
+                        fetchDocumentData={fetchDocumentData} 
+                        titulo1={"Trabalhos Concluídos"}
+                        titulo2={"Total"} 
+                        id={documentData ? documentData.docId : ''}
+                        source="trabalhosConcluidosAdv"
+                    />
+                    {/* Aba Datalhes do Envio */}
+                    <WorkDetails
+                        documentData={documentData}
+                        loading={loading}
+                        cpf={cpf}
+                        source="ConcluidosAdv" 
+                    />
+                </div>
             </div>
-          </div>
         </div>
-    </>
-  )
-};
+        </>   
+    )
+}

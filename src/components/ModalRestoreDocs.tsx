@@ -24,18 +24,19 @@ const ConfirmationRestoreDoc: React.FC<ConfirmationRestoreDocProps> = ({ dd, cpf
 
   const btnRestaurar = async () => {
     try {
+      //Mensagens de Alerta
       if (dd.Status === "Arquivado pelo Escritório") {
-        alert("Seu trabalho não pode ser restaurado pois foi arquivado pelo escritório.");
+        alert("Seu trabalho não pode ser restaurado pois foi arquivado pelo escritório")
         setIsOpen(false);
         return;
       }
       if (dd.Status === "Recusado pelo Escritório") {
-        alert("Seu trabalho não pode ser restaurado pois foi recusado pelo escritório.");
+        alert("Seu trabalho não pode ser restaurado pois foi arquivado pelo escritório")
         setIsOpen(false);
         return;
       }
       if (dd.Status === "Recusado pelo Cliente") {
-        alert("Seu trabalho não pode ser restaurado pois foi recusado pelo cliente.");
+        alert("Seu trabalho não pode ser restaurado pois foi arquivado pelo cliente")
         setIsOpen(false);
         return;
       }
@@ -68,7 +69,7 @@ const ConfirmationRestoreDoc: React.FC<ConfirmationRestoreDocProps> = ({ dd, cpf
             DataEntrega: dd.DataEntrega,
             DataEnvio: dd.DataEnvio,
             CaminhoArquivo: dd.CaminhoArquivo,
-            Status: "Aguardando Aprovação",
+            Status: "Aguardando Resposta",
           });
           querySnapshot.forEach(async (docSnapshot) => {
             await deleteDoc(docSnapshot.ref);
@@ -84,7 +85,7 @@ const ConfirmationRestoreDoc: React.FC<ConfirmationRestoreDocProps> = ({ dd, cpf
             queryOrcamentoSnapshot.forEach((docSnapshot) => {
                 // Adiciona a promessa de atualização ao array
                 updatePromises.push(updateDoc(docSnapshot.ref, {
-                    Status: "Aguardando Aprovação"
+                    Status: "Aguardando Resposta"
                 }));
             });
         }
@@ -114,7 +115,7 @@ const ConfirmationRestoreDoc: React.FC<ConfirmationRestoreDocProps> = ({ dd, cpf
           DataEntrega: dd.DataEntrega,
           DataEnvio: dd.DataEnvio,
           CaminhoArquivo: dd.CaminhoArquivo,
-          Status: "Aguardando Aprovação",
+          Status: "Aguardando Resposta",
         });
 
         // Deleta todos os documentos encontrados com o mesmo Titulo e Descricao
@@ -134,29 +135,44 @@ const ConfirmationRestoreDoc: React.FC<ConfirmationRestoreDocProps> = ({ dd, cpf
   };
 
   return (
+    <>
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger>
         <Button variant="ghost" size="icon">
           <RotateCw className="h-4 w-4" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+
+      {isOpen && (
+        <div 
+        className="fixed bg-[#000] bg-opacity-20 backdrop-blur-sm transition-opacity z-[50]" 
+        style={{
+          width: '100%',
+          height: '100%', 
+          top: 0,
+          left: -24
+        }}
+      />
+      )}
+
+      <DialogContent className="sm:max-w-[425px] bg-[#F0F4F8]">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold text-center">Restaurar Orçamento</DialogTitle>
+          <DialogTitle className="font-bold text-[28px] text-[#2B3C56] text-center">Restaurar Orçamento</DialogTitle>
         </DialogHeader>
         <div className="mt-6 text-center">
-          <p className="text-gray-500">Deseja restaurar "{dd.Titulo}"?</p>
+          <p className="text-gray-500">Deseja restaurar "<span className="font-semibold">{dd.Titulo}</span>"?</p>
         </div>
         <div className="mt-6 flex flex-col sm:flex-row justify-center gap-4">
-          <Button variant="default" onClick={btnRestaurar}>
-            Restaurar
-          </Button>
-          <Button variant="outline" onClick={btnCancelar}>
+          <Button variant='outline' className="text-[#2b3c56] border-[#2b3c56]" onClick={btnCancelar}>
             Cancelar
+          </Button>
+          <Button className="bg-[#007259] text-[#fff] hover:bg-[#005c47]" onClick={btnRestaurar}>
+            Restaurar
           </Button>
         </div>
       </DialogContent>
     </Dialog>
+    </>
   );
 };
 

@@ -22,7 +22,7 @@ export default function Navigation({ uid }: NavigationProps) {
             router.push(`/envioArquivo?uid=${uid}`);
         };
         const NavegadorTrabalhosConcluidos = () => {
-            router.push(`/`);
+            router.push(`/TrabalhosConcluidosAdv?uid=${uid}`);
         };
         const NavegadorTrabalhosEmProcesso = () => {
             router.push(`/TrabalhosEmProcessoAdv?uid=${uid}`);
@@ -48,7 +48,7 @@ export default function Navigation({ uid }: NavigationProps) {
             router.push(`/cadastrarFuncionario?uid=${uid}`);
         };
         const NavegadorTrabalhosConcluidos = () => {
-            router.push(`/`);
+            router.push(`/TrabalhosConcluidosAdm?uid=${uid}`);
         };
         const NavegadorTrabalhosEmProcesso = () => {
             router.push(`/TrabalhosEmProcessoAdm?uid=${uid}`);
@@ -65,12 +65,13 @@ export default function Navigation({ uid }: NavigationProps) {
         };
     };
 
+    //Rotas tela Funcionário
     const RotasFuncionario = () => {
         const NavegadorPaginaInicial = () => {
             router.push(`/telaFuncionario?uid=${uid}`);
         };
         const NavegadorTrabalhosConcluidos = () => {
-            router.push(`/`);
+            router.push(`/TrabalhosConcluidosFcn?uid=${uid}`);
         };
         return {
             NavegadorPaginaInicial,

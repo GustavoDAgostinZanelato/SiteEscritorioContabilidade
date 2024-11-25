@@ -8,6 +8,7 @@ import { useSearchParams } from 'next/navigation';
 import { SearchBar } from '@/components/SearchBar';
 import SideBarLayout from '@/components/SideBarLayout';
 import { WorkDetails } from '@/components/WorkDetails';
+import DocumentFilter from '@/components/DocumentFilter';
 import { collection, query, where, getDocs, getFirestore, doc, getDoc } from "firebase/firestore";
 import Navigation from '@/components/navigation/navigation';
 
@@ -30,6 +31,8 @@ export default function TelaAdvogado() {
     //Pegando os orçamentos no BD
     const [orcamentos, setOrcamentos] = useState<any[]>([]);
     const [documentData, setDocumentData] = useState<DocumentDataEncapsulamento | null>(null);
+    //Filtro de pesquisa
+    const [filteredOrcamentos, setFilteredOrcamentos] = useState(orcamentos);
     //Extra
     const [loading, setLoading] = useState(true); 
 
@@ -67,7 +70,7 @@ export default function TelaAdvogado() {
         if (docSnapshot.exists()) {
           const data = docSnapshot.data() as DocumentData;
           // Encapsulando os dados em uma propriedade 'data'
-          setDocumentData({ data, docId }); // type 'DocumentData' is not assignabel to type 'string'
+          setDocumentData({ data, docId });
         } else {
           console.log('Documento não encontrado');
         }
@@ -123,54 +126,55 @@ export default function TelaAdvogado() {
 
     return (
       <>
-        <div className="grid md:grid-cols-[260px_1fr] min-h-screen w-full">
-          <SideBarLayout 
-            onRefresh={handleRefresh}
-            primeiraLetra={primeiraLetra}
-            documentData={documentData}
-            orcamentos={orcamentos}
-            loading={loading}
-            DescricaoBtn1="Solicitar Orçamento"
-            DescricaoBtn2="Trabalhos Arquivados"
-            source='advogado'
-            cadastrarFuncionarioIcon={<Send className="w-5 h-5" />}
-            onHome={NavegadorHome}
-            onPaginaInicial={NavegadorPaginaInicial}
-            onEnvioArquivo={NavegadorEnvioArquivo}
-            onTrabalhosConcluidos={NavegadorTrabalhosConcluidos}
-            onTrabalhosEmProcesso={NavegadorTrabalhosEmProcesso}
-            onArquivados={NavegadorArquivados}
+        <div className="flex flex-col h-screen bg-[#E6F3F0]">
+          <SearchBar handleRefresh={handleRefresh} onHome={NavegadorHome} primeiraLetra={primeiraLetra}>
+            <DocumentFilter 
+              orcamentos={orcamentos} 
+              onFilterChange={setFilteredOrcamentos} 
+              source="advogado" 
+            />
+          </SearchBar>
+          <div className="flex flex-1 overflow-hidden">
+            <SideBarLayout 
+              onRefresh={handleRefresh}
+              primeiraLetra={primeiraLetra}
+              documentData={documentData}
+              orcamentos={orcamentos}
+              loading={loading}
+              DescricaoBtn1="Solicitar Orçamento"
+              DescricaoBtn2="Arquivados"
+              source='advogado'
+              cadastrarFuncionarioIcon={<Send className="w-5 h-5"/>}
+              onHome={NavegadorHome}
+              onPaginaInicial={NavegadorPaginaInicial}
+              onEnvioArquivo={NavegadorEnvioArquivo}
+              onTrabalhosConcluidos={NavegadorTrabalhosConcluidos}
+              onTrabalhosEmProcesso={NavegadorTrabalhosEmProcesso}
+              onArquivados={NavegadorArquivados}
 
-            onCadastrarFuncionario={NavegadorHome} //rota propria da empresa e que nao será usada aqui, por isso mandando qualquer caminho
-          />
-          <div className="flex flex-col">
-            <SearchBar handleRefresh={handleRefresh} primeiraLetra={primeiraLetra} />
-              <div className="grid md:grid-cols-[1fr_400px] gap-4 p-4 flex-1">
-                {/* Aba Trabalhos Enviados */}
-                <WorkList 
-                  orcamentos={orcamentos} 
-                  fetchDocumentData={fetchDocumentData} 
-                  titulo1={"Trabalhos Enviados"}
-                  titulo2={"Total"} 
-                  id={documentData ? documentData.docId : ''}
-                  source="advogado"
-                />
-                {/* Aba Datalhes do Envio */}
-                <WorkDetails
-                  documentData={documentData}
-                  loading={loading}
-                  cpf={cpf}
-                  primeiraLetra={primeiraLetra}
-                  nome={nome}
-                  sobrenome={sobrenome}
-                  email={email}
-                  resposta={"Resposta do Escritório"}
-                  id={documentData ? documentData.docId : ''}
-                  source="advogado" 
-                />
-              </div>
+              onCadastrarFuncionario={NavegadorHome} //rota propria da empresa e que nao será usada aqui, por isso mandando qualquer caminho
+            />
+          
+            <div className="flex flex-1 overflow-hidden p-6 gap-6">
+              {/* Aba Trabalhos Enviados */}
+              <WorkList 
+                orcamentos={filteredOrcamentos} 
+                fetchDocumentData={fetchDocumentData} 
+                titulo1={"Trabalhos Enviados"}
+                titulo2={"Total"} 
+                id={documentData ? documentData.docId : ''}
+                source="advogado"
+              />
+              {/* Aba Datalhes do Envio */}
+              <WorkDetails
+                documentData={documentData}
+                loading={loading}
+                cpf={cpf}
+                source="advogado" 
+              />
           </div>
         </div>
+      </div> 
     </>
   )
 }

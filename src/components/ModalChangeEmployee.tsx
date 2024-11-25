@@ -1,15 +1,16 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { collection, getDocs, getFirestore, query, where, doc, getDoc, updateDoc } from "firebase/firestore";
-import { app } from '../app/firebase/firebase';
-import { Card, CardContent } from "@/components/ui/card";
+import { UsersRound } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { Badge } from "@/components/ui/badge";
+import { app } from '../app/firebase/firebase';
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { collection, getDocs, getFirestore, query, where, doc, getDoc, updateDoc } from "firebase/firestore";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 
 interface Funcionario {
   id: string;
@@ -22,7 +23,7 @@ interface Funcionario {
 const db = getFirestore(app);
 
 export default function ModalChangeEmployee({ id }: { id: string }) {
-  const [open, setOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [orcamento, setOrcamento] = useState<any>(null);
   const [funcionarios, setFuncionarios] = useState<Funcionario[]>([]);
@@ -85,7 +86,7 @@ export default function ModalChangeEmployee({ id }: { id: string }) {
   };
 
   useEffect(() => {
-    if (open && id) {
+    if (isOpen && id) {
       fetchOrcamento();
       fetchAllFuncionarios(); // Buscando todos os funcionários ao abrir o modal
     }
@@ -108,7 +109,6 @@ export default function ModalChangeEmployee({ id }: { id: string }) {
         : [...prev, funcionarioId]
     );
   };
-  fetchAllFuncionarios();
   
 
   const renderEmployeeCard = (funcionario: Funcionario, isAssigned: boolean) => (
@@ -129,7 +129,7 @@ export default function ModalChangeEmployee({ id }: { id: string }) {
           </div>
         </div>
         <Button variant="outline" size="sm" onClick={() => handleTrabalhoFuncionario(funcionario.id)} className={isAssigned ? "bg-[#007259] text-[#fff] hover:bg-[#005c47] hover:text-[#fff]" : ""}>
-          {isAssigned ? "Remove" : "Assign"}
+          {isAssigned ? "Remover" : "Escalar"}
         </Button>
       </CardContent>
     </Card>
@@ -152,18 +152,31 @@ export default function ModalChangeEmployee({ id }: { id: string }) {
     } catch (error) {
       console.error("Erro ao utualizar funcionários: ", error);
     } finally {
-      setOpen(false);
+      setIsOpen(false);
       window.location.reload();
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button className="bg-[#007259] text-[#fff] hover:bg-[#005c47]">
-          Editar Funcionários
-        </Button>
+        <button className="text-[12px] text-[#007259] hover:text-[#00AD87] font-semibold flex border-b border-[#007259] mb-2">
+          <UsersRound className="h-4 w-4 mr-1"/>Editar Funcionários
+        </button>
       </DialogTrigger>
+
+      {isOpen && (
+        <div 
+        className="fixed bg-[#000] bg-opacity-20 backdrop-blur-sm transition-opacity z-[50]" 
+        style={{
+          width: '100%',
+          height: '100%', 
+          top: 0,
+          left: -24
+        }}
+      />
+      )}
+
       <DialogContent className="sm:max-w-[600px] bg-[#f0f4f8]">
         <DialogHeader className="border-b border-[#d0d5dd] pb-4">
           <DialogTitle className="text-3xl font-bold text-[#2b3c56]">Editar Funcionários</DialogTitle>
@@ -174,7 +187,7 @@ export default function ModalChangeEmployee({ id }: { id: string }) {
         <Tabs defaultValue="escalado" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="escalado">Funcionários Escalados</TabsTrigger>
-            <TabsTrigger value="naoEscalado">Funcionários Disponíveis</TabsTrigger>
+            <TabsTrigger value="naoEscalado" onClick={fetchAllFuncionarios} >Funcionários Disponíveis</TabsTrigger>
           </TabsList>
           <TabsContent value="escalado">
             <ScrollArea className="h-[400px] w-full pr-4">
@@ -196,73 +209,10 @@ export default function ModalChangeEmployee({ id }: { id: string }) {
           </TabsContent>
         </Tabs>
         <div className="mt-4 flex justify-end space-x-2">
-          <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
+          <Button variant="outline" className='text-[#2b3c56] border-[#2b3c56]' onClick={() => setIsOpen(false)}>Cancelar</Button>
           <Button className="bg-[#007259] text-[#fff] hover:bg-[#005c47]" onClick={SalvarModificacoes}>Salvar Modificações</Button>
         </div>
       </DialogContent>
     </Dialog>
   );
 };
-
-
-
-
-
-
-//Modal antiga
-    // <Dialog open={open} onOpenChange={setOpen}>
-    //   <DialogTrigger asChild>
-    //     <Button variant="outline">
-    //       Editar Funcionários
-    //     </Button>
-    //   </DialogTrigger>
-    //   <DialogContent className="sm:max-w-[600px] bg-[#f0f4f8]">
-    //     <DialogHeader className="border-b border-[#d0d5dd] pb-5">
-    //       <DialogTitle className="text-3xl font-bold text-[#2b3c56]">Editar Funcionários</DialogTitle>
-    //       <DialogDescription className="text-[#4a5b75]">
-    //         Modifique as funções dos colaboradores
-    //       </DialogDescription>
-    //     </DialogHeader>
-    //     <ScrollArea className="h-[400px] w-full pr-4">
-    //       <div className="grid grid-cols-1 gap-2 py-2">
-    //         {funcionarios.map((funcionario) => (
-    //           <Card key={funcionario.id} className="bg-[#fff] shadow-sm hover:shadow-md transition-shadow">
-    //             <CardContent className="p-4 flex items-center justify-between">
-    //               <div>
-    //                 <Avatar className="w-16 h-16 mr-4">
-    //                   <AvatarImage src={funcionario.avatar} alt={funcionario.nome} />
-    //                   <AvatarFallback className="bg-[#eaeaea] text-xl">
-    //                     {funcionario.nome.slice(0, 2)}
-    //                   </AvatarFallback>
-    //                 </Avatar>
-    //               </div>
-    //               <div> 
-    //                 <div className="space-y-1">
-    //                   <h3 className="text-lg font-semibold text-[#2b3c56]">{funcionario.nome} {funcionario.sobrenome}</h3>
-    //                   <Badge className="bg-[#e6f3f0] text-[#007259] hover:bg-[#e6f3f0] hover:text-[#007259]">
-    //                     {funcionario.email}
-    //                   </Badge>
-    //                 </div>
-    //               </div>
-    //               <div className="flex items-center space-x-2 ml-auto">
-    //                 <Checkbox className='h-5 w-5 mr-5'
-    //                   // id={`assign-${funcionario.id}`}
-    //                   // checked={assignedEmployees.includes(funcionario.id)}
-    //                   // onCheckedChange={() => handleAssignment(funcionario.id)}
-    //                 />
-    //                 {/* <Label className="text-[#2b3c56]">
-    //                   Atribuir
-    //                 </Label> */}
-    //               </div>
-    //             </CardContent>
-    //           </Card>
-    //         ))}
-    //       </div>
-    //     </ScrollArea>
-    //     <div className="mt-4 flex justify-end space-x-2">
-    //       <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
-    //       <Button className="bg-[#007259] text-[#fff] hover:bg-[#005c47]">Salvar Alterações</Button>
-    //     </div>
-    //   </DialogContent>
-    // </Dialog>
-

@@ -1,20 +1,20 @@
 "use client";
 
-import { Send } from 'lucide-react';
-import { app } from '../firebase/firebase';
+import { Send } from 'lucide-react';    
+import { app } from '../firebase/firebase'; 
 import { useEffect, useState } from 'react';
 import { WorkList } from '@/components/WorkList';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';  
 import { SearchBar } from '@/components/SearchBar';
-import SideBarLayout from '@/components/SideBarLayout';
 import { WorkDetails } from '@/components/WorkDetails';
+import SideBarLayout from '@/components/SideBarLayout';
 import DocumentFilter from '@/components/DocumentFilter';
 import { collection, query, where, getDocs, getFirestore, doc, getDoc } from "firebase/firestore";
 import Navigation from '@/components/navigation/navigation';
 
 const db = getFirestore(app);
 
-export default function TelaFuncionario() {
+export default function TrabalhosConcluidosFcn() {
     //Puxando o ID do Funcionario da URL
     const searchParams = useSearchParams();
     const uid = searchParams.get('uid');
@@ -61,34 +61,34 @@ export default function TelaFuncionario() {
       docId: string;
       caminhoParecer?: Parecer[];
     };
-    
+
     // Função para recarregar a página
     const handleRefresh = () => {
         window.location.reload();
     };
-
-    const fetchDocumentData = async (docId: string) => {
-      try {
-        const docRef = doc(db, 'OrcamentosProcesso', docId);
-        const docSnapshot = await getDoc(docRef);
-        if (docSnapshot.exists()) {
-          const data = docSnapshot.data() as DocumentData;
-          // Encapsulando os dados em uma propriedade 'data'
-          setDocumentData({ data, docId });
-        } else {
-          console.log('Documento não encontrado');
-        }
-      } catch (error) {
-        console.error('Erro ao buscar documento:', error);
-      }
-    };
     
+    const fetchDocumentData = async (docId: string) => {
+        try {
+            const docRef = doc(db, 'TrabalhosConcluidos', docId);
+            const docSnapshot = await getDoc(docRef);
+            if (docSnapshot.exists()) {
+            const data = docSnapshot.data() as DocumentData;
+            // Encapsulando os dados em uma propriedade 'data'
+            setDocumentData({ data, docId });
+            } else {
+            console.log('Documento não encontrado');
+            }
+        } catch (error) {
+            console.error('Erro ao buscar documento:', error);
+        }
+    };
+
     useEffect(() => {
         const fetchNome = async () => {
             setLoading(true); //Inicia o carregamento
             try {
                 //Pega as informações do Funcionario com base no ID da URL
-                const q = query(collection(db, "Funcionarios"), where("uid", "==", uid)); //Pega os dados da coleção "Advogado" com base no ID
+                const q = query(collection(db, "Funcionarios"), where("uid", "==", uid)); //Pega os dados da coleção "Funcionario" com base no ID
                 const querySnapshot = await getDocs(q); //Executa a consulta e retorna um snapshot contendo os documentos que correspondem à condição
 
                 //Pega os arquivos no Banco de Dados caso querySnapshot não esteja vazio
@@ -101,7 +101,7 @@ export default function TelaFuncionario() {
                     setCpf(funcionarioData.cpf);
                     
                     // Após buscar o CPF, busca os orçamentos do funcionario
-                    const orcamentoQuery = query(collection(db, 'OrcamentosProcesso'), where('cpfsFuncionarios', 'array-contains', funcionarioData.cpf));
+                    const orcamentoQuery = query(collection(db, 'TrabalhosConcluidos'), where('cpfsFuncionarios', 'array-contains', funcionarioData.cpf));
                     const orcamentoSnapshot = await getDocs(orcamentoQuery); //orcamentoSnapshot espera até todos os documentos serem buscados
 
                     const orcamentoList = orcamentoSnapshot.docs.map(doc => {
@@ -111,9 +111,7 @@ export default function TelaFuncionario() {
                         id: doc.id,
                       };
                     })
-                    .filter(doc => 
-                      !(doc.FuncionariosConcluiram && doc.FuncionariosConcluiram.includes(funcionarioData.cpf))
-                  );
+                    
                 setOrcamentos(orcamentoList);
 
                 } else {
@@ -130,15 +128,14 @@ export default function TelaFuncionario() {
             fetchNome(); //Chama a função fetchNome(), que está dentro do hook. Ela pega informações do Firebase
         }
     }, [uid]); //Sempre que a variável 'uid' mudar, o useEffect será executado, pois ela está listada nas dependências do hook
-
-    return (
-      <>
+  
+    return( 
         <div className="flex flex-col h-screen bg-[#E6F3F0]">
           <SearchBar handleRefresh={handleRefresh} onHome={NavegadorHome} primeiraLetra={primeiraLetra}>
             <DocumentFilter 
               orcamentos={orcamentos} 
-              onFilterChange={setFilteredOrcamentos} 
-              source="funcionario" 
+              onFilterChange={setFilteredOrcamentos}
+              source="concluidosFnc"
             />
           </SearchBar>
           <div className="flex flex-1 overflow-hidden">
@@ -163,26 +160,22 @@ export default function TelaFuncionario() {
               <div className="flex flex-1 overflow-hidden p-6 gap-6">
                 {/* Aba Trabalhos Enviados */}
                 <WorkList 
-                  orcamentos={filteredOrcamentos} 
-                  fetchDocumentData={fetchDocumentData} 
-                  titulo1={"Trabalhos Recebidos"}
-                  titulo2={"Total"}
-                  id={documentData ? documentData.docId : ''} 
-                  source="funcionario"
+                    orcamentos={filteredOrcamentos} 
+                    fetchDocumentData={fetchDocumentData} 
+                    titulo1={"Trabalhos Concluídos"}
+                    titulo2={"Total"}
+                    id={documentData ? documentData.docId : ''} 
+                    source="concluidosFnc"
                 />
                 {/* Aba Datalhes do Envio */}
                 <WorkDetails
                     documentData={documentData}
                     loading={loading}
                     cpf={cpf}
-                    source="funcionario" 
+                    source="concluidosFnc" 
                 />
               </div>
           </div>
         </div>
-    </>
-  )
+    )
 }
-
-
-
