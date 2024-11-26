@@ -6,15 +6,17 @@ import { useEffect, useState } from 'react';
 import { WorkList } from '@/components/WorkList';
 import { useSearchParams } from 'next/navigation';
 import { SearchBar } from '@/components/SearchBar';
+import LoadingScreen from '@/components/LoadingScreen';
 import { WorkDetails } from '@/components/WorkDetails';
 import SideBarLayout from '@/components/SideBarLayout';
 import DocumentFilter from '@/components/DocumentFilter';
 import { collection, query, where, getDocs, getFirestore, doc, getDoc } from "firebase/firestore";
 import Navigation from '@/components/navigation/navigation';
+import dynamic from "next/dynamic";
 
 const db = getFirestore(app);
 
-export default function telaEmpresa() {
+export function telaEmpresa() {
     //Puxando o ID do usuário pela URL
     const searchParams = useSearchParams();
     const uid = searchParams.get('uid');
@@ -121,55 +123,70 @@ export default function telaEmpresa() {
       }
   }, [uid]); //Sempre que a variável 'uid' mudar, o useEffect será executado, pois ela está listada nas dependências do hook
 
-    return (
-      <>
-        <div className="flex flex-col h-screen bg-[#E6F3F0]">
-          <SearchBar handleRefresh={handleRefresh} onHome={NavegadorHome} primeiraLetra={primeiraLetra}>
+  return (
+    <>
+      <div className="grid md:grid-cols-[260px_1fr] min-h-screen w-full bg-[#2B3C56]">
+        <SideBarLayout 
+            onRefresh={handleRefresh}
+            primeiraLetra={primeiraLetra}
+            orcamentos={orcamentos}
+            loading={loading}
+            DescricaoBtn1="Cadastrar Funcionário"
+            DescricaoBtn2="Recusados"
+            source='empresa'
+            cadastrarFuncionarioIcon={<UsersRound className="h-5 w-5" />}
+            onHome={NavegadorHome}
+            onPaginaInicial={NavegadorPaginaInicial}
+            onCadastrarFuncionario={NavegadorCadastrarFuncionario}
+            onTrabalhosConcluidos={NavegadorTrabalhosConcluidos}
+            onTrabalhosEmProcesso={NavegadorTrabalhosEmProcesso}
+            onArquivados={NavegadorArquivados}
+
+            onEnvioArquivo={NavegadorHome} //rota propria do advogado e que nao será usada aqui, por isso mandando qualquer caminho
+          />
+          <div className="flex flex-col">
+            <SearchBar handleRefresh={handleRefresh} onHome={NavegadorHome} primeiraLetra={primeiraLetra} source="empresa">
               <DocumentFilter 
                 orcamentos={orcamentos} 
                 onFilterChange={setFilteredOrcamentos} 
                 source="empresa" 
               />
-          </SearchBar>
-          <div className="flex flex-1 overflow-hidden">
-            <SideBarLayout 
-                  onRefresh={handleRefresh}
-                  primeiraLetra={primeiraLetra}
-                  orcamentos={orcamentos}
+            </SearchBar>
+            <div className="flex flex-1 overflow-hidden p-6 gap-6">
+              {/* Aba Trabalhos Recebidos */}
+              <WorkList 
+                  orcamentos={filteredOrcamentos} 
+                  fetchDocumentData={fetchDocumentData} 
+                  titulo1={"Trabalhos Recebidos"} 
+                  titulo2={"Total"} 
+                  id={documentData ? documentData.docId : ''}
+                  source="empresa"
+                />
+                {/* Aba Datalhes do Envio */}
+                <WorkDetails
+                  documentData={documentData}
                   loading={loading}
-                  DescricaoBtn1="Cadastrar Funcionário"
-                  DescricaoBtn2="Recusados"
-                  source='empresa'
-                  cadastrarFuncionarioIcon={<UsersRound className="h-5 w-5" />}
-                  onHome={NavegadorHome}
-                  onPaginaInicial={NavegadorPaginaInicial}
-                  onCadastrarFuncionario={NavegadorCadastrarFuncionario}
-                  onTrabalhosConcluidos={NavegadorTrabalhosConcluidos}
-                  onTrabalhosEmProcesso={NavegadorTrabalhosEmProcesso}
-                  onArquivados={NavegadorArquivados}
-
-                  onEnvioArquivo={NavegadorHome} //rota propria do advogado e que nao será usada aqui, por isso mandando qualquer caminho
-              />
-              <div className="flex flex-1 overflow-hidden p-6 gap-6">
-                {/* Aba Trabalhos Recebidos */}
-                <WorkList 
-                    orcamentos={filteredOrcamentos} 
-                    fetchDocumentData={fetchDocumentData} 
-                    titulo1={"Trabalhos Recebidos"} 
-                    titulo2={"Total"} 
-                    id={documentData ? documentData.docId : ''}
-                    source="empresa"
-                  />
-                  {/* Aba Datalhes do Envio */}
-                  <WorkDetails
-                    documentData={documentData}
-                    loading={loading}
-                    cpf={cpf}
-                    source="empresa"
-                  />
-              </div>
-          </div>
+                  cpf={cpf}
+                  source="empresa"
+                />
+          </div>  
         </div>
-      </>
-    )
-  }
+      </div>
+    </>
+  )
+}
+
+//Tela de Carregamento
+const loadWithDelay = async () => {
+  await new Promise((resolve) => setTimeout(resolve, 250));
+  return telaEmpresa;
+};
+
+const TelaEmpresa = dynamic(() => loadWithDelay(), {
+  ssr: false,
+  loading: () => (
+    <LoadingScreen source="empresa" />
+  ),
+});
+  
+export default TelaEmpresa;

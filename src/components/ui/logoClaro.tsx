@@ -4,7 +4,7 @@ function SvgComponentClaro() {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      width={170}
+      width={200}
       viewBox="0 0 1440 809.999993"
       // height={1080}
     >

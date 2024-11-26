@@ -2,6 +2,7 @@ import { ReactNode } from 'react';
 import { Button } from "@/components/ui/button";
 import { House, SquareCheckBig, Layers3, Archive } from 'lucide-react';
 import { usePathname } from 'next/navigation';
+import  SvgComponenttEscuro  from '@/components/ui/logoEscuro'
 
 interface DocumentData {
   CaminhoArquivo: string;
@@ -65,10 +66,10 @@ export default function SideBarLayout({
   const pathname = usePathname(); // Obtém a rota base da URL
 
   return (
-    <div className="w-[260px] bg-[#007259]" >
-      <header className="flex items-center p-3" />
-        {source === 'advogado' ? (
-        //Barra de navegação TelaAdvogado
+    <>
+      {source === 'advogado' ? (
+        <div className="w-[260px] bg-[#007259]" style={{ boxShadow: "2px 0 12px rgba(0, 0, 0, 0.4)" }} >
+          <header className="flex items-center p-3" />
           <nav className="flex flex-col gap-1 p-2">
             <Button 
               variant="ghost" 
@@ -128,16 +129,22 @@ export default function SideBarLayout({
               <div className="text-[12px] text-[#fff]/60">Copyright 2024 ®</div>
             </div>
           </nav>
+        </div>
 
-        //Barra de navegação TelaEmpresa
-        ) : source === 'empresa' ? (
+
+      ) : source === 'empresa' ? (
+        <div className="w-[260px] bg-[#2B3C56]" style={{ boxShadow: "2px 0 12px rgba(0, 0, 0, 0.4)" }} >
+          <button className='p-6 pb-4 ml-1' onClick={onHome}>
+            <SvgComponenttEscuro />
+          </button>
+          <header className="flex items-center p-3" />
           <nav className="flex flex-col gap-1 p-2">
             <Button 
               variant="ghost" 
               onClick={onPaginaInicial}
               className={`justify-start gap-4 px-4 py-8 rounded-md ${
                 pathname === '/telaEmpresa'
-                  ? 'text-[#007259] bg-[#fff]/95'
+                  ? 'text-[#2B3C56] bg-[#fff]/95 hover:text-[#2B3C56]'
                   : 'text-[#fff] hover:bg-[#EBEDF0]/10 hover:text-[#fff]'
               } `}
             >
@@ -148,7 +155,7 @@ export default function SideBarLayout({
               onClick={onCadastrarFuncionario}
               className={`justify-start gap-4 px-4 py-8 rounded-md ${
                 pathname === '/cadastrarFuncionario'
-                  ? 'text-[#007259] bg-[#fff]/95'
+                  ? 'text-[#2B3C56] bg-[#fff]/95 hover:text-[#2B3C56]'
                   : 'text-[#fff] hover:bg-[#EBEDF0]/10 hover:text-[#fff]'
                 } `} 
             >
@@ -159,7 +166,7 @@ export default function SideBarLayout({
               onClick={onTrabalhosConcluidos}
               className={`justify-start gap-4 px-4 py-8 rounded-md ${
                 pathname === '/TrabalhosConcluidosAdm'
-                  ? 'text-[#007259] bg-[#fff]/95'
+                  ? 'text-[#2B3C56] bg-[#fff]/95 hover:text-[#2B3C56]'
                   : 'text-[#fff] hover:bg-[#EBEDF0]/10 hover:text-[#fff]'
                 } `} 
             >
@@ -170,7 +177,7 @@ export default function SideBarLayout({
               onClick={onTrabalhosEmProcesso}
               className={`justify-start gap-4 px-4 py-8 rounded-md ${
                 pathname === '/TrabalhosEmProcessoAdm'
-                  ? 'text-[#007259] bg-[#fff]/95'
+                  ? 'text-[#2B3C56] bg-[#fff]/95 hover:text-[#2B3C56]'
                   : 'text-[#fff] hover:bg-[#EBEDF0]/10 hover:text-[#fff]'
                 } `} 
             >
@@ -181,7 +188,7 @@ export default function SideBarLayout({
               onClick={onArquivados}
               className={`justify-start gap-4 px-4 py-8 rounded-md ${
                 pathname === '/ArquivadosEmpresa'
-                  ? 'text-[#007259] bg-[#fff]/95'
+                  ? 'text-[#2B3C56] bg-[#fff]/95 hover:text-[#2B3C56]'
                   : 'text-[#fff] hover:bg-[#EBEDF0]/10 hover:text-[#fff]'
                 } `} 
             >
@@ -192,9 +199,12 @@ export default function SideBarLayout({
               <div className="text-[12px] text-[#fff]/60">Copyright 2024 ®</div>
             </div>
           </nav>
-        ) : (
-          
-          //Barra de navegação TelaFuncionario
+        </div>
+        
+
+      ) : (
+        <div className="w-[260px] bg-[#007259]" style={{ boxShadow: "2px 0 12px rgba(0, 0, 0, 0.4)" }} >
+          <header className="flex items-center p-3" />
           <nav className="flex flex-col gap-1 p-2">
             <Button
               variant="ghost" 
@@ -224,7 +234,21 @@ export default function SideBarLayout({
               <div className="text-[12px] text-[#fff]/60">Copyright 2024 ®</div>
             </div>
           </nav>
-        )}  
-      </div>
-  ); 
+        </div>
+      )}
+    </> 
+  )
 }
+          
+
+
+        
+
+
+
+        
+          
+          //Barra de navegação TelaFuncionario
+      
+      //   )}  
+      // </div>

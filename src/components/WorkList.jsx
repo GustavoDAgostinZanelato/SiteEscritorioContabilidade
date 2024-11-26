@@ -19,7 +19,7 @@ export const WorkList = ({ orcamentos, fetchDocumentData, titulo1, titulo2, sour
       </div>
       <div className="divide-y p-3 pt-0 max-h-[500px] overflow-y-auto">
         {orcamentos.map((Orcamento, index) => (
-          <div className="flex items-center p-2 mb-2 rounded-lg bg-[#EBEDF0] hover:bg-[#E6F3F0]" key={index} onClick={() => fetchDocumentData(Orcamento.id)}>
+          <div className="flex items-center p-2 mb-2 rounded-lg bg-[#EBEDF0] hover:bg-[#000]/10" key={index} onClick={() => fetchDocumentData(Orcamento.id)}>
             <div className="flex items-center w-full p-3 hover:cursor-pointer">
               <h1 className="cursor-pointer text-blue-500">
                 <div className='text-[#2B3C56] font-bold text-[20px] mb-3 truncate whitespace-nowrap max-w-[210px]'>{Orcamento.Titulo}</div>

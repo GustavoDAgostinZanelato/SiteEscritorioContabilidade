@@ -63,8 +63,8 @@ export default function EnvioArquivo() {
 
     return(
     <>
-        <div className="flex flex-col h-screen bg-[#E6F3F0]">
-            <SearchBar handleRefresh={handleRefresh} onHome={NavegadorHome} primeiraLetra={primeiraLetra}>
+        <div className="flex flex-col h-screen bg-[#2B3C56]">
+            <SearchBar handleRefresh={handleRefresh} onHome={NavegadorHome} primeiraLetra={primeiraLetra} source="cliente">
                 {exibirFiltro && ( //Exibe somente se exibirFiltro === true
                     <DocumentFilter 
                         orcamentos={[]} //Passando arrays vazios pois essa tela não possuem os valores que satisfazem a função 
@@ -78,7 +78,7 @@ export default function EnvioArquivo() {
                 onRefresh={handleRefresh}
                 primeiraLetra={primeiraLetra}
                 loading={loading}
-                DescricaoBtn1="Solicitar Orçamento"
+                DescricaoBtn1="Enviar Documento"
                 DescricaoBtn2="Arquivados"
                 source='advogado'
                 cadastrarFuncionarioIcon={<Send className="w-5 h-5"/>}

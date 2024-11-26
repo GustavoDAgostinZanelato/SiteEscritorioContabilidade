@@ -11,10 +11,12 @@ import { WorkDetails } from '@/components/WorkDetails';
 import DocumentFilter from '@/components/DocumentFilter';
 import { collection, query, where, getDocs, getFirestore, doc, getDoc } from "firebase/firestore";
 import Navigation from '@/components/navigation/navigation';
+import LoadingScreen from '@/components/LoadingScreen';
+import dynamic from "next/dynamic";
 
 const db = getFirestore(app);
 
-export default function TrabalhosConcluidosAdv() {
+export function TrabalhosConcluidosAdv() {
     //Puxando o ID do Advogado da URL
     const searchParams = useSearchParams();
     const uid = searchParams.get('uid');
@@ -25,7 +27,6 @@ export default function TrabalhosConcluidosAdv() {
     const [nome, setNome] = useState('');
     const [sobrenome, setSobrenome] = useState('');
     const [email, setEmail] = useState('');
-    const [telefone, setTelefone] = useState('');
     const [cpf, setCpf] = useState('');
     const primeiraLetra = nome.slice(0, 2);
     //Pegando os orçamentos no BD
@@ -54,8 +55,8 @@ export default function TrabalhosConcluidosAdv() {
         data: string;
     };
     type DocumentDataEncapsulamento =  {
-    data: DocumentData,
-    docId: string,
+        data: DocumentData,
+        docId: string,
     }
 
     // Função para recarregar a página
@@ -93,7 +94,6 @@ export default function TrabalhosConcluidosAdv() {
                     setNome(advogadoData.nome);         
                     setSobrenome(advogadoData.sobrenome);
                     setEmail(advogadoData.email); //Colocando email, telefone e cpf em um estado para mandar pra coleção Orcamento
-                    setTelefone(advogadoData.telefone);
                     setCpf(advogadoData.cpf);
                     
                     // Após buscar o CPF, busca os orçamentos do advogado
@@ -127,8 +127,8 @@ export default function TrabalhosConcluidosAdv() {
 
     return(
         <>
-        <div className="flex flex-col h-screen bg-[#E6F3F0]">
-            <SearchBar handleRefresh={handleRefresh} onHome={NavegadorHome} primeiraLetra={primeiraLetra}>
+        <div className="flex flex-col h-screen bg-[#2B3C56]">
+            <SearchBar handleRefresh={handleRefresh} onHome={NavegadorHome} primeiraLetra={primeiraLetra} source="cliente">
                 <DocumentFilter 
                 orcamentos={orcamentos} 
                 onFilterChange={setFilteredOrcamentos} 
@@ -142,7 +142,7 @@ export default function TrabalhosConcluidosAdv() {
                     documentData={documentData} 
                     orcamentos={orcamentos}
                     loading={loading}
-                    DescricaoBtn1="Solicitar Orçamento"
+                    DescricaoBtn1="Enviar Documento"
                     DescricaoBtn2="Arquivados"
                     source='advogado'
                     cadastrarFuncionarioIcon={<Send className="w-5 h-5" />}
@@ -179,3 +179,18 @@ export default function TrabalhosConcluidosAdv() {
         </>   
     )
 }
+
+//Tela de Carregamento
+const loadWithDelay = async () => {
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    return TrabalhosConcluidosAdv;
+  };
+  
+  const trabalhosConcluidosAdv = dynamic(() => loadWithDelay(), {
+    ssr: false,
+    loading: () => (
+      <LoadingScreen source="advogado"/>
+    ),
+  });
+  
+  export default trabalhosConcluidosAdv

@@ -29,7 +29,7 @@ interface ConfirmationProps {
     CaminhoArquivo: string;
     Status: string;
     feedbackOrcamento: string;
-    Valor: string;
+    valor: string;
   };
 }
 
@@ -40,7 +40,7 @@ const ModalPayment: React.FC<ConfirmationProps> = ({ dd }) => {
   const [Ncartao, setNcartao] = useState("");
   const [cvc, setCvc] = useState("");
   const [parcelas, setParcelas] = useState('');
-  const [valorComJuros, setValorComJuros] = useState(dd.Valor);
+  const [valorComJuros, setValorComJuros] = useState(dd.valor);
   const [abaAtiva, setAbaAtiva] = useState("cartao");
 
   //Formatação do Número do Cartão
@@ -110,7 +110,7 @@ const ModalPayment: React.FC<ConfirmationProps> = ({ dd }) => {
   };
   const handleValueChange = (value: string) => {
     setParcelas(value); // Define o valor das parcelas com o valor recebido
-    const novoValor = aplicarJuros(dd.Valor, value); // Aplica juros de acordo com a seleção
+    const novoValor = aplicarJuros(dd.valor, value); // Aplica juros de acordo com a seleção
     const novoValorFormatado = formatarValorComVirgula(novoValor);
     setValorComJuros(novoValorFormatado); // Atualiza o estado com o novo valor com juros formatado
   };
@@ -153,7 +153,7 @@ const ModalPayment: React.FC<ConfirmationProps> = ({ dd }) => {
         <DialogHeader>
           <div className=' flex flex-col'>
             <p className="text-[12px] font-semibold text-[#007259]">Valor</p>
-            <p className="text-[32px] font-bold text-[#2b3c56]">{dd.Valor}</p>
+            <p className="text-[32px] font-bold text-[#2b3c56]">{dd.valor}</p>
             {abaAtiva === "cartao" && (
               <div className="flex">
                 <p className="text-[12px] font-semibold text-[#007259]">Valor final:</p>

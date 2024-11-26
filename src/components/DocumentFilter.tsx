@@ -134,7 +134,7 @@ const DocumentFilter: React.FC<DocumentFilterProps> = ({ orcamentos, source, onF
                 variant="secondary"
                 size="sm"
                 onClick={() => handleFilterChange(filterId)}
-                className="mr-2 bg-[#E6F3F0]"
+                className="mr-2"
               >
                 {filterOptions.find((option) => option.id === filterId)?.label}
                 <span className="ml-2">

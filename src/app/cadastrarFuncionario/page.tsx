@@ -42,19 +42,19 @@ export default function CadastrarFuncionario() {
         cpfAdvogado: string;
         cpfEmpresa: string;
         id: string;
-      };
-      type DocumentDataEncapsulamento =  {
+    };
+    type DocumentDataEncapsulamento =  {
         data: DocumentData,
         docId: string,
-      }
+    }
 
     // Função para o botão de recarregar a página
     const handleRefresh = () => {
         window.location.reload();
     };
   
-      //Hook com as consultas nas coleções Empresa e Orcamento
-      useEffect(() => {
+    //Hook com as consultas nas coleções Empresa e Orcamento
+    useEffect(() => {
         const fetchInfo = async () => {
             setLoading(true); // Inicia o estado de carregamento
             try {
@@ -66,7 +66,7 @@ export default function CadastrarFuncionario() {
                     const empresaData = querySnapshot.docs[0].data();
                     setNome(empresaData.nome);
                 } else {
-                  console.error("Usuário não encontrados");
+                    console.error("Usuário não encontrados");
                 }
             } catch (error) {
                 setNome('Erro ao carregar nome'); //Transforma a variável "nome" na mensagem: "Erro ao carregar nome"
@@ -75,23 +75,13 @@ export default function CadastrarFuncionario() {
             }
         };
         if (uid) {
-          fetchInfo(); //Chama a função fetchNome(), que está dentro do hook. Ela pega informações do Firebase
+            fetchInfo(); //Chama a função fetchNome(), que está dentro do hook. Ela pega informações do Firebase
         }
     }, [uid]); //Sempre que a variável 'uid' mudar, o useEffect será executado, pois ela está listada nas dependências do hook
   
     return(
-        <div className="flex flex-col h-screen bg-[#E6F3F0]">
-            <SearchBar handleRefresh={handleRefresh} onHome={NavegadorHome} primeiraLetra={primeiraLetra}>
-                {exibirFiltro && ( //Exibe somente se exibirFiltro === true
-                    <DocumentFilter 
-                        orcamentos={[]} //Passando arrays vazios pois essa tela não possuem os valores que satisfazem a função 
-                        onFilterChange={() => {}}
-                        source="cadastrarFuncionario"
-                    />
-                )}
-            </SearchBar>
-            <div className="flex flex-1 overflow-hidden">
-                <SideBarLayout 
+        <div className="flex h-screen bg-[#2B3C56] overflow-hidden">
+            <SideBarLayout 
                 onRefresh={handleRefresh}
                 primeiraLetra={primeiraLetra}
                 loading={loading}
@@ -107,12 +97,10 @@ export default function CadastrarFuncionario() {
                 onArquivados={NavegadorArquivados}
 
                 onEnvioArquivo={NavegadorHome} //rota propria do advogado e que nao será usada aqui, por isso mandando qualquer caminho
-                />
-                <div className="flex flex-grow justify-center items-center">
-                    <CadastroEmployee />      
-                </div>
-            </div>  
-        </div>
-   
+            />
+            <div className="flex flex-grow justify-center items-center">
+                <CadastroEmployee />      
+            </div>
+        </div>  
     )
 }
